@@ -22,6 +22,7 @@ const query = ref('')
 const catFilter = ref('')
 const showSettings = ref(false)
 const drawer = ref(false)
+const paneOpen = ref(false)
 const pct = ref(0)
 const toast = ref('')
 
@@ -174,6 +175,50 @@ async function onSave(text: string) {
   showToast(ok ? '已保存' : '服务没启动，已存入草稿箱')
 }
 
+function closeDrawers() {
+  drawer.value = false
+  paneOpen.value = false
+}
+
+function onScrim() {
+  if (paneOpen.value) closePane()
+  drawer.value = false
+}
+
+/** 关底部抽屉；批注/导航关掉时顺带把第三栏关掉，免得留个看不见的栏 */
+function closePane() {
+  paneOpen.value = false
+  if (layout.c3Mode !== 'compare') layout.c3 = false
+}
+
+function openDrawer() {
+  drawer.value = true
+  paneOpen.value = false
+}
+
+function openPane(mode: 'annotations' | 'nav') {
+  layout.c3 = true
+  layout.c3Mode = mode
+  paneOpen.value = true
+  drawer.value = false
+}
+
+function toggleCompare() {
+  if (!article.value?.hasZh) {
+    showToast('这篇没有对照层（没有 zh.md）')
+    return
+  }
+  paneOpen.value = false
+  drawer.value = false
+  layout.c3Mode = 'compare'
+  layout.c3 = !layout.c3
+}
+
+function jumpTo(h: string) {
+  closeDrawers()
+  setTimeout(() => jump(h), 60)
+}
+
 function openArticleIn(id: string) {
   location.hash = `#/p/${id}`
   drawer.value = false
@@ -211,7 +256,10 @@ const onKey = (e: KeyboardEvent) => {
 
 watch(
   () => props.id,
-  (id) => load(id),
+  (id) => {
+    closeDrawers()
+    load(id)
+  },
   { immediate: false },
 )
 
@@ -257,14 +305,20 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <div v-if="drawer || paneOpen" class="scrim" @click="onScrim" />
+
     <div class="reader__body" :style="{ gridTemplateColumns: cols }">
       <aside v-if="layout.c1" class="tree-pane" :class="{ 'is-open': drawer }">
+        <button class="pane__close" aria-label="关闭" @click="drawer = false">✕</button>
         <TreePane
           :cats="cats"
           :active="catFilter"
           :query="query"
+          :toc="article?.toc || []"
+          :keywords="article?.meta.keywords || []"
           @pick="catFilter = $event"
           @update:query="query = $event"
+          @jump="jumpTo"
         />
         <div class="tree-pane__list">
           <button
@@ -310,8 +364,13 @@ onBeforeUnmount(() => {
         </template>
       </main>
 
-      <aside v-if="layout.c3 && layout.c3Mode !== 'compare' && article" class="side-pane">
-        <NavPane v-if="layout.c3Mode === 'nav'" :article="article" @jump="jump" />
+      <aside
+        v-if="layout.c3 && layout.c3Mode !== 'compare' && article"
+        class="side-pane"
+        :class="{ 'is-open': paneOpen }"
+      >
+        <button class="pane__close" aria-label="关闭" @click="closePane">✕</button>
+        <NavPane v-if="layout.c3Mode === 'nav'" :article="article" @jump="jumpTo" />
         <NotesPane
           v-else
           :article="article"
@@ -327,25 +386,24 @@ onBeforeUnmount(() => {
     </div>
 
     <nav class="dock">
-      <button class="dock__item" @click="drawer = !drawer">
+      <button class="dock__item" :class="{ 'is-on': drawer }" @click="openDrawer">
         <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
           <path d="M3 5.5h14M3 10h14M3 14.5h9" />
         </svg>
         <span>目录</span>
       </button>
-      <button class="dock__item" @click="cycleMode">
+      <button class="dock__item" :class="{ 'is-on': layout.c3 && layout.c3Mode === 'compare' }" @click="toggleCompare">
         <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" />
           <path d="M10 3.5v13" />
         </svg>
-        <span>{{ layout.c3Mode === 'compare' ? '对照' : layout.c3Mode === 'annotations' ? '批注' : '导航' }}</span>
+        <span>对照</span>
       </button>
-      <button class="dock__item" :class="{ 'is-on': !layout.c3 }" @click="layout.c3 = !layout.c3">
+      <button class="dock__item" :class="{ 'is-on': paneOpen && layout.c3Mode === 'annotations' }" @click="openPane('annotations')">
         <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="4.5" y="3.5" width="11" height="13" rx="1.5" />
-          <path d="M7.5 7h5M7.5 10h5M7.5 13h3" />
+          <path d="M4 4.5h12v8H9l-3.2 2.6V12.5H4z" />
         </svg>
-        <span>{{ layout.c3 ? '单栏' : '双栏' }}</span>
+        <span>批注</span>
       </button>
       <button class="dock__item" @click="showSettings = true">
         <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">

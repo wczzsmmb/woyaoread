@@ -43,7 +43,7 @@ const esc = (s: string) =>
         <span class="annolist__text">{{ a.text }}</span>
       </button>
     </div>
-    <p v-else-if="online" class="pane__hint">还没有批注。鼠标移到段落右侧，点 ✎。</p>
+    <p v-else-if="online" class="pane__hint">还没有批注。在段落右侧（手机上是点一下段落）点 ✎ 就能写。</p>
 
     <div v-if="lost.length" class="pane__lost">
       <div class="pane__head"><span>失联批注</span><span class="muted">{{ lost.length }}</span></div>
