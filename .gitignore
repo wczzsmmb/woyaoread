@@ -1,0 +1,12 @@
+node_modules
+dist
+public/data
+public/media
+_duiye/logs/*
+_duiye/cache/*
+! _duiye/cache/.gitkeep
+.DS_Store
+*.local
+
+# keep dirs
+!_duiye/annotations/
