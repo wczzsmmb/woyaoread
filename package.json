@@ -1,0 +1,31 @@
+{
+  "name": "duiye",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "对页 · 三栏 Markdown 精读器（本地静态，无数据库）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node tools/serve.mjs",
+    "new": "node tools/new.mjs",
+    "validate": "node tools/validate.mjs",
+    "ingest": "node tools/ingest.mjs",
+    "doctor": "node tools/doctor.mjs",
+    "mcp": "node tools/mcp.mjs",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "js-yaml": "^4.1.0",
+    "katex": "^0.16.11",
+    "marked": "^15.0.7",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
+    "vue-tsc": "^2.2.0"
+  }
+}
