@@ -6,7 +6,6 @@ import NotesPane from '../components/NotesPane.vue'
 import NavPane from '../components/NavPane.vue'
 import SettingsPanel from '../components/SettingsPanel.vue'
 import NoteEditor from '../components/NoteEditor.vue'
-import Wordmark from '../components/Wordmark.vue'
 import { fetchArticle, fetchIndex } from '../lib/api'
 import { ann, detect, loadAnnotations, resolve, saveAnnotation } from '../lib/annotations'
 import { layout, normalizeC3, RATIOS } from '../lib/layout'
@@ -238,7 +237,6 @@ onBeforeUnmount(() => {
     <header class="bar">
       <div class="bar__left">
         <button class="icon" title="回书架" aria-label="回书架" @click="goShelf">←</button>
-        <span class="bar__brand"><Wordmark class="bar__word" /></span>
         <div class="bar__title">
           <span class="bar__name">{{ article?.title || '载入中…' }}</span>
           <span v-if="article" class="bar__meta">
@@ -351,7 +349,9 @@ onBeforeUnmount(() => {
       </button>
       <button class="dock__item" @click="showSettings = true">
         <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <path d="M4 14 8 6l4 8M5.4 11.4h5.2M14.2 9v5" />
+          <path d="M3 6.5h14M3 13.5h14" />
+          <circle cx="7.5" cy="6.5" r="1.9" fill="#fff" />
+          <circle cx="13" cy="13.5" r="1.9" fill="#fff" />
         </svg>
         <span>设置</span>
       </button>

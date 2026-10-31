@@ -34,10 +34,19 @@ AI 的写内容流程只有一条：写 `_duiye/cache/…` → `npm run validate
 - 不提交 `dist/`、`public/data/`、`public/media/`、`node_modules/`、`_duiye/cache/*`
 - 一次提交只做一件事；内容变更用 `content:` 前缀单独提交
 
-## 四、字标
+## 四、字标（方案已定，但目前不上）
 
-`src/components/Wordmark.vue` 与 `public/icon.svg` 由 `tools/make-wordmark.py` 生成，**不要手改**。
-要换字形/字重就改脚本再跑（需要 fontTools，命令写在 README）。
+**选定方案：`src/components/Mark.vue` —— 抽象双页符号（左页实心 / 右页空心）。**
+现在**不在界面里显示**（用户看过觉得摆在顶栏不好看），但代码保留。
+不要主动加回去；要启用就在 `ShelfView.vue` / `ReaderView.vue` 里挂 `<Mark />`。
+
+（备选记录：`Wordmark.vue` 是宋体字标，用户否掉了；`public/icon.svg` 仍是「对/页」叠排的应用图标。）
+
+
+`src/components/Wordmark.vue` 由 `tools/make-wordmark.py` 生成，**不要手改**。
+但**界面上暂时不显示字标**（用户看过，觉得摆在顶栏不好看）。请不要主动加回去；
+要恢复就改这两处：`ShelfView.vue` 的 `.brand__*`、`ReaderView.vue` 的 `.bar__*`。
+`public/icon.svg`（应用图标）继续保留。
 
 ## 五、改代码的约束
 

@@ -207,6 +207,15 @@ a {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* 标记：两页相对（方案⑤，已选定但暂不显示） */
+.mark {
+  display: block;
+  height: 1em;
+  width: auto;
+  flex: none;
+  color: inherit;
+}
+
 .wordmark {
   display: block;
   height: 1em;
@@ -403,14 +412,8 @@ a {
   min-width: 0;
   margin-left: 4px;
 }
-.bar__brand {
-  display: flex;
-  align-items: center;
-  padding: 0 10px 0 4px;
-  margin-right: 6px;
-  border-right: 1px solid var(--line);
-  flex: none;
-}
+/* 字标（Wordmark.vue）暂时不显示：用户觉得摆在这里不好看，先留代码备用。
+   要恢复时在两处加上 <Wordmark class="bar__word" /> / class="brand__word"。 */
 .bar__word {
   height: 15px;
   color: var(--fg-2);
@@ -1144,17 +1147,9 @@ a {
   .doc {
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
   }
-  .bar__brand {
-    padding-right: 6px;
-    margin-right: 2px;
-    border-right: 0;
-  }
   .bar__word {
     height: 16px;
     color: var(--fg);
-  }
-  .brand__word {
-    height: 24px;
   }
   .bar__name {
     font-size: 13.5px;
