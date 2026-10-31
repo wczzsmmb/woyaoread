@@ -6,6 +6,7 @@ import NotesPane from '../components/NotesPane.vue'
 import NavPane from '../components/NavPane.vue'
 import SettingsPanel from '../components/SettingsPanel.vue'
 import NoteEditor from '../components/NoteEditor.vue'
+import Wordmark from '../components/Wordmark.vue'
 import { fetchArticle, fetchIndex } from '../lib/api'
 import { ann, detect, loadAnnotations, resolve, saveAnnotation } from '../lib/annotations'
 import { layout, normalizeC3, RATIOS } from '../lib/layout'
@@ -237,7 +238,7 @@ onBeforeUnmount(() => {
     <header class="bar">
       <div class="bar__left">
         <button class="icon" title="回书架" aria-label="回书架" @click="goShelf">←</button>
-        <button class="icon only-narrow" title="目录" @click="drawer = !drawer">☰</button>
+        <span class="bar__brand"><Wordmark class="bar__word" /></span>
         <div class="bar__title">
           <span class="bar__name">{{ article?.title || '载入中…' }}</span>
           <span v-if="article" class="bar__meta">
@@ -248,13 +249,13 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="bar__right">
-        <button class="icon" :class="{ 'is-off': !layout.c3 }" title="第三栏" @click="layout.c3 = !layout.c3">
+        <button class="icon only-wide" :class="{ 'is-off': !layout.c3 }" title="第三栏" @click="layout.c3 = !layout.c3">
           Ⅲ
         </button>
-        <button class="btn btn--sm" @click="cycleMode">
+        <button class="btn btn--sm only-wide" @click="cycleMode">
           {{ layout.c3Mode === 'compare' ? '对照' : layout.c3Mode === 'annotations' ? '批注' : '导航' }}
         </button>
-        <button class="icon" title="设置" @click="showSettings = true">Aa</button>
+        <button class="icon only-wide" title="设置" @click="showSettings = true">Aa</button>
       </div>
     </header>
 
@@ -326,6 +327,35 @@ onBeforeUnmount(() => {
         />
       </aside>
     </div>
+
+    <nav class="dock">
+      <button class="dock__item" @click="drawer = !drawer">
+        <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M3 5.5h14M3 10h14M3 14.5h9" />
+        </svg>
+        <span>目录</span>
+      </button>
+      <button class="dock__item" @click="cycleMode">
+        <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" />
+          <path d="M10 3.5v13" />
+        </svg>
+        <span>{{ layout.c3Mode === 'compare' ? '对照' : layout.c3Mode === 'annotations' ? '批注' : '导航' }}</span>
+      </button>
+      <button class="dock__item" :class="{ 'is-on': !layout.c3 }" @click="layout.c3 = !layout.c3">
+        <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="4.5" y="3.5" width="11" height="13" rx="1.5" />
+          <path d="M7.5 7h5M7.5 10h5M7.5 13h3" />
+        </svg>
+        <span>{{ layout.c3 ? '单栏' : '双栏' }}</span>
+      </button>
+      <button class="dock__item" @click="showSettings = true">
+        <svg class="dock__glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 14 8 6l4 8M5.4 11.4h5.2M14.2 9v5" />
+        </svg>
+        <span>设置</span>
+      </button>
+    </nav>
 
     <SettingsPanel v-if="showSettings" :has-zh="Boolean(article?.hasZh)" @close="showSettings = false" />
     <NoteEditor

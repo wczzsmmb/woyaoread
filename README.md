@@ -84,6 +84,18 @@ papers/
 
 ---
 
+## 字标 / 图标
+
+字标是**取字形轮廓生成的 SVG**（不依赖字体文件、不用 SVG `<text>`，渲染不会抖）：
+
+```bash
+# 需要 fonttools（一次性）
+python3 -m venv /tmp/ftenv && /tmp/ftenv/bin/pip install fonttools
+/tmp/ftenv/bin/python tools/make-wordmark.py   # 重写 src/components/Wordmark.vue 与 public/icon.svg
+```
+
+改字、换字体、换字重都在 `tools/make-wordmark.py` 顶部改。生成的 `Wordmark.vue` 不要手改。
+
 ## 扩展
 
 ```

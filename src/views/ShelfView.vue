@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import Wordmark from '../components/Wordmark.vue'
 import { fetchIndex } from '../lib/api'
 import { openArticle } from '../lib/router'
 import type { ArticleMeta, SiteIndex } from '../lib/types'
@@ -51,11 +52,7 @@ void (null as unknown as ArticleMeta)
   <div class="shelf">
     <header class="shelf__head">
       <div class="brand">
-        <svg viewBox="0 0 18 18" class="brand__mark" aria-hidden="true">
-          <rect x="1.2" y="2" width="6.8" height="14" rx="1.1" fill="currentColor" />
-          <rect x="10" y="2" width="6.8" height="14" rx="1.1" fill="none" stroke="currentColor" stroke-width="1.4" />
-        </svg>
-        <span class="brand__name">{{ index?.site.title || '对页' }}</span>
+        <Wordmark class="brand__word" />
         <span class="brand__sub">{{ index?.site.subtitle || '左选 · 中读 · 右对照' }}</span>
       </div>
       <div class="shelf__tools">

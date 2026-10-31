@@ -1,5 +1,14 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { ResolvedAnn, Row } from '../lib/types'
+
+const active = ref<string | null>(null)
+
+function activate(row: Row, e: MouseEvent) {
+  const t = e.target as HTMLElement
+  if (t.closest('a, .anno, .pen')) return
+  active.value = active.value === row.h ? null : row.h
+}
 
 const props = defineProps<{
   rows: Row[]
@@ -33,7 +42,7 @@ const noteOf = (row: Row, layer: 'index' | 'zh'): ResolvedAnn | null => {
       :class="[`row--${row.type}`, { 'row--noref': paired && !row.right }]"
       :id="'b-' + row.h"
     >
-      <div class="cell cell--doc">
+      <div class="cell cell--doc" :class="{ 'is-active': active === row.h }" @click="activate(row, $event)">
         <div class="md" v-html="row.html"></div>
         <button
           v-if="canAnnotate"

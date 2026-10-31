@@ -34,7 +34,12 @@ AI 的写内容流程只有一条：写 `_duiye/cache/…` → `npm run validate
 - 不提交 `dist/`、`public/data/`、`public/media/`、`node_modules/`、`_duiye/cache/*`
 - 一次提交只做一件事；内容变更用 `content:` 前缀单独提交
 
-## 四、改代码的约束
+## 四、字标
+
+`src/components/Wordmark.vue` 与 `public/icon.svg` 由 `tools/make-wordmark.py` 生成，**不要手改**。
+要换字形/字重就改脚本再跑（需要 fontTools，命令写在 README）。
+
+## 五、改代码的约束
 
 - 运行时依赖只有 `vue`。加任何新依赖前先说明理由
 - 不装 vue-router / Pinia / UI 库 / 动画库（hash 路由和状态都在 `src/lib/`）
@@ -43,7 +48,7 @@ AI 的写内容流程只有一条：写 `_duiye/cache/…` → `npm run validate
 - 端口固定 **43999**；批注服务只碰 `_duiye/annotations/`
 - 构建不混淆，但开压缩（`minify: 'esbuild'`），并保留 sourcemap
 
-## 五、自检清单
+## 六、自检清单
 
 改完任何东西：
 

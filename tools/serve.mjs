@@ -22,7 +22,15 @@ const argOf = (name, fallback) => {
   return i >= 0 ? argv[i + 1] : fallback
 }
 const PORT = Number(argOf('port', 43999))
-const HOST = argv.includes('--host') ? '0.0.0.0' : '127.0.0.1'
+// --host            → 0.0.0.0（局域网 / 手机）
+// --host 100.x.y.z  → 只绑定某个网卡（例如 Tailscale 地址，最省事也最安全）
+const hostArg = (() => {
+  const i = argv.indexOf('--host')
+  if (i < 0) return null
+  const v = argv[i + 1]
+  return v && !v.startsWith('--') ? v : '0.0.0.0'
+})()
+const HOST = hostArg || '127.0.0.1'
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -162,8 +170,7 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, HOST, () => {
-  const shown = HOST === '0.0.0.0' ? '0.0.0.0' : '127.0.0.1'
-  console.log(`对页 · http://${shown}:${PORT}`)
+  console.log(`对页 · http://${HOST}:${PORT}`)
   console.log(`  静态目录 ${DIST}`)
   console.log(`  批注数据 _duiye/annotations/`)
   if (!fs.access(DIST).then(() => true, () => false)) {
