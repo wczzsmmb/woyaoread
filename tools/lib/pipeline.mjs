@@ -135,6 +135,10 @@ export async function buildAll(root = process.cwd(), opts = {}) {
 
     let rows = hasZh ? align(left, right) : left.map((b) => ({ ...b, rh: null, right: null }))
 
+    const cjkCount = (indexMd.match(/[\u4e00-\u9fff]/g) || []).length
+    const latinCount = (indexMd.match(/[A-Za-z]/g) || []).length
+    const script = latinCount > cjkCount * 3 ? 'latin' : 'cjk'
+
     const article = {
       id: a.id,
       n: a.n,
@@ -148,12 +152,13 @@ export async function buildAll(root = process.cwd(), opts = {}) {
         keywords: Array.isArray(meta.keywords) ? meta.keywords.map(String) : [],
       },
       hasZh,
+      script,
       chars: indexMd.replace(/\s/g, '').length,
       alignRatio: hasZh && left.length ? rows.filter((r) => r.right).length / left.length : 0,
       blocks: rows.length,
       rows,
       toc: left
-        .filter((b) => b.type === 'heading' && b.depth <= 3)
+        .filter((b) => b.type === 'heading' && b.depth > 1 && b.depth <= 3)
         .map((b) => ({ h: b.h, text: b.text, depth: b.depth })),
       updated: new Date().toISOString(),
     }
@@ -190,6 +195,7 @@ export async function buildAll(root = process.cwd(), opts = {}) {
       title: article.title,
       cats: a.cats,
       hasZh,
+      script,
       chars: article.chars,
       blocks: article.blocks,
       alignRatio: Number(article.alignRatio.toFixed(3)),

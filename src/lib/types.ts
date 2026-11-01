@@ -16,6 +16,7 @@ export interface ArticleMeta {
   title: string
   cats: string[]
   hasZh: boolean
+  script?: 'cjk' | 'latin'
   chars: number
   blocks: number
   alignRatio: number
@@ -52,6 +53,7 @@ export interface Article {
   title: string
   meta: { author: string; year: number | null; source: string; keywords: string[] }
   hasZh: boolean
+  script?: 'cjk' | 'latin'
   chars: number
   alignRatio: number
   blocks: number

@@ -15,6 +15,7 @@ const props = defineProps<{
   paired: boolean
   annotations: Record<string, ResolvedAnn>
   canAnnotate: boolean
+  script?: 'cjk' | 'latin'
 }>()
 
 const emit = defineEmits<{
@@ -43,7 +44,7 @@ const noteOf = (row: Row, layer: 'index' | 'zh'): ResolvedAnn | null => {
       :id="'b-' + row.h"
     >
       <div class="cell cell--doc" :class="{ 'is-active': active === row.h }" @click="activate(row, $event)">
-        <div class="md" v-html="row.html"></div>
+        <div class="md" :class="{ 'md--latin': script === 'latin' }" v-html="row.html"></div>
         <button
           v-if="canAnnotate"
           class="pen"
@@ -69,7 +70,7 @@ const noteOf = (row: Row, layer: 'index' | 'zh'): ResolvedAnn | null => {
       </div>
 
       <div v-if="paired" class="cell cell--ref">
-        <div v-if="row.right" class="md" v-html="row.right"></div>
+        <div v-if="row.right" class="md" :class="{ 'md--latin': script === 'latin' }" v-html="row.right"></div>
         <span v-else class="noref">这段没有对照</span>
         <button
           v-if="canAnnotate && row.rh"

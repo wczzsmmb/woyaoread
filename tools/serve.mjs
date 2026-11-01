@@ -97,7 +97,10 @@ async function serveStatic(req, res, urlPath) {
     return
   }
   let buf
+  let mtime = 0
   try {
+    const st = await fs.stat(target)
+    mtime = st.mtimeMs
     buf = await fs.readFile(target)
   } catch {
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('404')
@@ -110,10 +113,13 @@ async function serveStatic(req, res, urlPath) {
   }
   const accept = String(req.headers['accept-encoding'] || '')
   if (COMPRESSIBLE.test(rel) && accept.includes('gzip') && buf.length > 1024) {
-    let gz = gzCache.get(target)
+    // 缓存键带 mtime：重新构建后不会再把旧的 gzip 结果发出去
+    const key = `${target}:${mtime}`
+    let gz = gzCache.get(key)
     if (!gz) {
       gz = zlib.gzipSync(buf, { level: 6 })
-      gzCache.set(target, gz)
+      if (gzCache.size > 400) gzCache.clear()
+      gzCache.set(key, gz)
     }
     headers['content-encoding'] = 'gzip'
     headers['vary'] = 'Accept-Encoding'

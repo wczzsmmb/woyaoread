@@ -294,15 +294,6 @@ onBeforeUnmount(() => {
           </span>
         </div>
       </div>
-      <div class="bar__right">
-        <button class="icon only-wide" :class="{ 'is-off': !layout.c3 }" title="第三栏" @click="layout.c3 = !layout.c3">
-          Ⅲ
-        </button>
-        <button class="btn btn--sm only-wide" @click="cycleMode">
-          {{ layout.c3Mode === 'compare' ? '对照' : layout.c3Mode === 'annotations' ? '批注' : '导航' }}
-        </button>
-        <button class="icon only-wide" title="设置" @click="showSettings = true">Aa</button>
-      </div>
     </header>
 
     <div v-if="drawer || paneOpen" class="scrim" @click="onScrim" />
@@ -359,6 +350,7 @@ onBeforeUnmount(() => {
             :paired="paired"
             :annotations="resolved.map"
             :can-annotate="true"
+            :script="article.script"
             @edit="openEditor"
           />
         </template>
