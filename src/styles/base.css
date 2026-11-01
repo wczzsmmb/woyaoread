@@ -901,6 +901,26 @@ a {
   display: block;
   margin: 1em auto;
   border-radius: 3px;
+  cursor: zoom-in;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 4vmin;
+  background: rgba(16, 17, 19, 0.88);
+  cursor: zoom-out;
+}
+.lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.6);
 }
 .md a {
   color: var(--blue);
@@ -1408,7 +1428,7 @@ a {
     display: inline-grid;
   }
   .doc {
-    padding: 20px 16px 120px;
+    padding: 22px 18px 120px;
   }
   .doc__head {
     margin-bottom: 18px;
@@ -1444,8 +1464,8 @@ a {
     display: none;
   }
   .md {
-    font-size: calc(var(--fs) - 1px);
-    line-height: calc(var(--lh) - 0.14);
+    font-size: var(--fs);
+    line-height: calc(var(--lh) - 0.08);
   }
   .md.md--latin {
     line-height: 1.58;

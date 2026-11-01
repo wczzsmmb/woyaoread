@@ -27,6 +27,7 @@ const paneOpen = ref(false)
 const pct = ref(0)
 const toast = ref('')
 const activeH = ref('')
+const zoom = ref<string | null>(null)
 let tocIO: IntersectionObserver | null = null
 
 const editor = reactive({
@@ -439,6 +440,10 @@ onBeforeUnmount(() => {
         <span>设置</span>
       </button>
     </nav>
+
+    <div v-if="zoom" class="lightbox" @click="zoom = null">
+      <img :src="zoom" alt="" />
+    </div>
 
     <SettingsPanel v-if="showSettings" :has-zh="Boolean(article?.hasZh)" @close="showSettings = false" />
     <NoteEditor
