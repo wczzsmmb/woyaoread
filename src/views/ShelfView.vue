@@ -55,28 +55,21 @@ void (null as unknown as ArticleMeta)
 
 <template>
   <div class="shelf">
-    <header class="shelf__head">
-      <div class="brand">
-        <h1 class="brand__name">{{ index?.site.title || '对页' }}</h1>
-        <span class="brand__sub">{{ index?.site.subtitle || '左选 · 中读 · 右对照' }}</span>
-      </div>
-      <div class="searchbar">
-        <svg class="searchbar__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+    <header class="hero">
+      <h1 class="hero__name">{{ index?.site.title || '对页' }}</h1>
+      <p class="hero__sub">{{ index?.site.subtitle || '左选 · 中读 · 右对照' }}</p>
+
+      <label class="hero__search">
+        <svg class="hero__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
           <circle cx="9" cy="9" r="5.5" />
           <path d="m13.5 13.5 3 3" stroke-linecap="round" />
         </svg>
-        <input v-model="query" class="searchbar__input" type="search" placeholder="搜标题 / 分类 / 关键词" spellcheck="false" />
-      </div>
-    </header>
+        <input v-model="query" type="search" placeholder="搜标题 / 分类 / 关键词" spellcheck="false" />
+      </label>
 
-    <p v-if="error" class="state">
-      读不到 data/index.json：{{ error }}<br />先跑 <code>npm run build</code> 或 <code>npm run dev</code>。
-    </p>
-
-    <template v-else>
       <div class="chips">
         <button class="chip" :class="{ 'is-on': !activeCat }" @click="activeCat = ''">
-          全部 <em>{{ index?.articles.length || 0 }}</em>
+          全部<em>{{ index?.articles.length || 0 }}</em>
         </button>
         <button
           v-for="c in cats"
@@ -85,14 +78,20 @@ void (null as unknown as ArticleMeta)
           :class="{ 'is-on': activeCat === c.name }"
           @click="pick(c.name)"
         >
-          {{ c.name }} <em>{{ c.ids.length }}</em>
+          {{ c.name }}<em>{{ c.ids.length }}</em>
         </button>
       </div>
+    </header>
 
+    <p v-if="error" class="state">
+      读不到 data/index.json：{{ error }}<br />先跑 <code>npm run build</code> 或 <code>npm run dev</code>。
+    </p>
+
+    <template v-else>
       <section class="rack">
         <div class="rack__head">
-          <h2>{{ activeCat || '我的书架' }}</h2>
-          <span class="rack__count">{{ articles.length }} 篇</span>
+          <h2>{{ activeCat || '全部篇目' }}</h2>
+          <a class="rack__more">{{ articles.length }} 篇</a>
         </div>
         <div class="books">
           <button
@@ -104,10 +103,11 @@ void (null as unknown as ArticleMeta)
           >
             <span class="book__cover">
               <span class="book__cat">{{ a.cats.at(-1) || '未分类' }}</span>
-              <span class="book__title">{{ a.title }}</span>
-              <span class="book__rule"></span>
+              <span class="book__glyph">{{ a.title.trim().slice(0, 1) }}</span>
               <span class="book__year">{{ a.year || '' }}</span>
             </span>
+            <span class="book__name">{{ a.title }}</span>
+            <span class="book__author">{{ a.authors || a.cats[0] || '未分类' }}</span>
             <span class="book__meta">{{ a.blocks }} 块 · {{ ratioText(a.alignRatio) }}</span>
           </button>
         </div>

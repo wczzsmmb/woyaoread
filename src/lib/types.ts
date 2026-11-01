@@ -14,6 +14,7 @@ export interface ArticleMeta {
   n: number
   slug: string
   title: string
+  authors?: string
   cats: string[]
   hasZh: boolean
   script?: 'cjk' | 'latin'

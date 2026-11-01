@@ -193,6 +193,7 @@ export async function buildAll(root = process.cwd(), opts = {}) {
       n: a.n,
       slug: a.slug,
       title: article.title,
+      authors: article.meta.author,
       cats: a.cats,
       hasZh,
       script,
