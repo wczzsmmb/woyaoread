@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Article } from '../lib/types'
 
-defineProps<{ article: Article }>()
+defineProps<{ article: Article; activeH?: string }>()
 const emit = defineEmits<{ (e: 'jump', h: string): void }>()
 </script>
 
@@ -16,7 +16,7 @@ const emit = defineEmits<{ (e: 'jump', h: string): void }>()
         v-for="t in article.toc"
         :key="t.h"
         class="navlist__item"
-        :class="`lvl-${t.depth}`"
+        :class="[`lvl-${t.depth}`, { 'is-on': activeH === t.h }]"
         @click="emit('jump', t.h)"
       >
         {{ t.text }}

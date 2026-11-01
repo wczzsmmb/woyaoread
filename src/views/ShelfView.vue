@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { fetchIndex } from '../lib/api'
 import { openArticle } from '../lib/router'
+import { progressOf, recentIds } from '../lib/progress'
 import type { ArticleMeta, SiteIndex } from '../lib/types'
 
 const index = ref<SiteIndex | null>(null)
@@ -16,6 +17,14 @@ onMounted(async () => {
   } catch (e) {
     error.value = String((e as Error).message || e)
   }
+})
+
+const continueList = computed(() => {
+  const all = index.value?.articles || []
+  return recentIds()
+    .map((id) => all.find((a) => a.id === id))
+    .filter(Boolean)
+    .slice(0, 8) as typeof all
 })
 
 const cats = computed(() => {
@@ -88,6 +97,29 @@ void (null as unknown as ArticleMeta)
     </p>
 
     <template v-else>
+      <section v-if="continueList.length && !activeCat && !query" class="rack rack--continue">
+        <div class="rack__head">
+          <h2>继续阅读</h2>
+          <span class="rack__more">{{ continueList.length }} 篇</span>
+        </div>
+        <div class="rail">
+          <button
+            v-for="a in continueList"
+            :key="a.id"
+            class="continue"
+            :style="{ '--hu': hue(a.slug) }"
+            @click="openArticle(a.id)"
+          >
+            <span class="continue__cover">{{ a.title.trim().slice(0, 1) }}</span>
+            <span class="continue__body">
+              <span class="continue__name">{{ a.title }}</span>
+              <span class="continue__bar"><i :style="{ width: Math.round(progressOf(a.id) * 100) + '%' }"></i></span>
+              <span class="continue__meta">{{ Math.round(progressOf(a.id) * 100) }}% · {{ a.blocks }} 块</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
       <section class="rack">
         <div class="rack__head">
           <h2>{{ activeCat || '全部篇目' }}</h2>

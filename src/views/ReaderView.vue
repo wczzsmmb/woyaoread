@@ -10,6 +10,7 @@ import { fetchArticle, fetchIndex } from '../lib/api'
 import { ann, detect, loadAnnotations, resolve, saveAnnotation } from '../lib/annotations'
 import { layout, normalizeC3, RATIOS } from '../lib/layout'
 import { goShelf } from '../lib/router'
+import { progressOf, setProgress, touchRecent } from '../lib/progress'
 import type { Article, SiteIndex } from '../lib/types'
 
 const props = defineProps<{ id: string }>()
@@ -25,6 +26,8 @@ const drawer = ref(false)
 const paneOpen = ref(false)
 const pct = ref(0)
 const toast = ref('')
+const activeH = ref('')
+let tocIO: IntersectionObserver | null = null
 
 const editor = reactive({
   open: false,
@@ -45,6 +48,11 @@ const cats = computed(() =>
   (index.value?.cats || [])
     .map((c) => ({ ...c, depth: Math.max(0, c.path.length - 1) }))
     .sort((a, b) => a.path.join('/').localeCompare(b.path.join('/'), 'zh')),
+)
+
+/** 第三栏已经是「导航」时，第一栏就不再重复列一遍小节 */
+const treeToc = computed(() =>
+  layout.c3 && layout.c3Mode === 'nav' ? [] : article.value?.toc || [],
 )
 
 const filtered = computed(() => {
@@ -138,6 +146,7 @@ async function load(id: string) {
     const a = await fetchArticle(id)
     article.value = a
     normalizeC3(a.hasZh)
+    touchRecent(a.id)
     document.title = `${a.title} · ${index.value.site.title}`
     await applyAssets(a, indexCache)
     ann.checked = false
@@ -244,6 +253,21 @@ const cycleMode = () => {
 const onScroll = () => {
   const h = document.documentElement.scrollHeight - window.innerHeight
   pct.value = h > 0 ? Math.min(1, window.scrollY / h) : 0
+  if (article.value) setProgress(article.value.id, pct.value)
+}
+
+function setupTocObserver() {
+  tocIO?.disconnect()
+  tocIO = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) activeH.value = (e.target as HTMLElement).dataset.bh || ''
+      }
+    },
+    { rootMargin: '-56px 0px -72% 0px' },
+  )
+  document.querySelectorAll('.row--heading').forEach((el) => tocIO?.observe(el))
+  if (!activeH.value) activeH.value = article.value?.toc[0]?.h || ''
 }
 
 const onKey = (e: KeyboardEvent) => {
@@ -264,13 +288,21 @@ watch(
 )
 
 onMounted(() => {
-  load(props.id)
+  load(props.id).then(() => {
+    setupTocObserver()
+    const saved = progressOf(props.id)
+    if (saved > 0.04 && saved < 0.96) {
+      const h = document.documentElement.scrollHeight - window.innerHeight
+      window.scrollTo({ top: saved * h })
+    }
+  })
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('keydown', onKey)
   onScroll()
 })
 
 onBeforeUnmount(() => {
+  tocIO?.disconnect()
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('keydown', onKey)
   styleEl?.remove()
@@ -305,7 +337,8 @@ onBeforeUnmount(() => {
           :cats="cats"
           :active="catFilter"
           :query="query"
-          :toc="article?.toc || []"
+          :toc="treeToc"
+          :active-h="activeH"
           :keywords="article?.meta.keywords || []"
           @pick="catFilter = $event"
           @update:query="query = $event"
@@ -362,7 +395,7 @@ onBeforeUnmount(() => {
         :class="{ 'is-open': paneOpen }"
       >
         <button class="pane__close" aria-label="关闭" @click="closePane">✕</button>
-        <NavPane v-if="layout.c3Mode === 'nav'" :article="article" @jump="jumpTo" />
+        <NavPane v-if="layout.c3Mode === 'nav'" :article="article" :active-h="activeH" @jump="jumpTo" />
         <NotesPane
           v-else
           :article="article"

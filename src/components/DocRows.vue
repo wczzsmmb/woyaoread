@@ -42,6 +42,7 @@ const noteOf = (row: Row, layer: 'index' | 'zh'): ResolvedAnn | null => {
       class="row"
       :class="[`row--${row.type}`, { 'row--noref': paired && !row.right }]"
       :id="'b-' + row.h"
+      :data-bh="row.h"
     >
       <div class="cell cell--doc" :class="{ 'is-active': active === row.h }" @click="activate(row, $event)">
         <div class="md" :class="{ 'md--latin': script === 'latin' }" v-html="row.html"></div>

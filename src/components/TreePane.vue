@@ -8,6 +8,7 @@ const props = withDefaults(
     query: string
     toc?: { h: string; text: string; depth: number }[]
     keywords?: string[]
+    activeH?: string
   }>(),
   { toc: () => [], keywords: () => [] },
 )
@@ -39,7 +40,7 @@ void props
         v-for="t in toc"
         :key="t.h"
         class="tree__toc"
-        :class="`lvl-${t.depth}`"
+        :class="[`lvl-${t.depth}`, { 'is-on': activeH === t.h }]"
         @click="emit('jump', t.h)"
       >
         {{ t.text }}
