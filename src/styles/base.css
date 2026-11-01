@@ -28,7 +28,7 @@
 
   --fs: 17px;
   --lh: 1.9;
-  --bar-h: 52px;
+  --bar-h: 50px;
   --c1-w: 240px;
   --row-cols: 1fr 1fr;
 }
@@ -537,12 +537,27 @@ a {
   height: calc(100vh - var(--bar-h));
   display: flex;
   flex-direction: column;
+  background: var(--page);
   border-right: 1px solid var(--line);
   overflow: hidden;
 }
 .tree {
-  padding: 14px 12px 8px;
-  border-bottom: 1px solid var(--line);
+  padding: 14px 10px 6px;
+}
+.tree .input {
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--soft);
+  font-size: 12.5px;
+}
+.tree .input::placeholder {
+  color: var(--fg-4);
+}
+.tree .input:focus {
+  background: var(--soft-2);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
 }
 .tree__list {
   display: flex;
@@ -554,12 +569,12 @@ a {
 }
 .tree__label {
   font-size: 10.5px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--fg-4);
-  margin-bottom: 4px;
+  margin: 0 6px 6px;
 }
 .tree__sect {
-  margin-top: 14px;
+  margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
   max-height: 30vh;
@@ -676,12 +691,12 @@ a {
 
 /* 正文 */
 .doc {
-  padding: 32px 40px 150px;
+  padding: 44px 44px 150px;
   min-width: 0;
 }
 .doc__head {
   max-width: 70ch;
-  margin: 0 auto 26px;
+  margin: 0 auto 30px;
 }
 .doc__head h1 {
   font-family: var(--font-doc);
@@ -699,7 +714,8 @@ a {
   color: var(--fg-4);
 }
 .doc__meta > * + *::before {
-  content: "· ";
+  content: "·";
+  margin: 0 7px 0 2px;
   color: var(--line-2);
 }
 
@@ -946,7 +962,15 @@ a {
   top: var(--bar-h);
   height: calc(100vh - var(--bar-h));
   overflow: auto;
+  background: var(--page);
   border-left: 1px solid var(--line);
+}
+.side-pane .pane__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--page);
+  padding-top: 4px;
 }
 .pane__close {
   display: none;
