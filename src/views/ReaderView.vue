@@ -272,6 +272,11 @@ function setupTocObserver() {
 }
 
 const onKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (zoom.value) return void (zoom.value = null)
+    if (showSettings.value) return void (showSettings.value = false)
+    return closeDrawers()
+  }
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
   if (e.key === '1') layout.c1 = !layout.c1
   if (e.key === '2') layout.c2 = !layout.c2

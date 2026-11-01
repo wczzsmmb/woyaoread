@@ -78,7 +78,7 @@ const ratios = Object.keys(RATIOS) as Ratio[]
       </section>
 
       <section class="field">
-        <label class="checks"><input v-model="layout.immersive" type="checkbox" /><span>沉浸模式（隐藏上下工具条）</span></label>
+        <label class="checks"><input v-model="layout.immersive" type="checkbox" /><span>沉浸模式（隐藏顶栏，鼠标贴顶唤出）</span></label>
       </section>
     </aside>
   </div>
