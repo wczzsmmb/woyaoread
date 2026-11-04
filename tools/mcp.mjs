@@ -1,5 +1,5 @@
 /**
- * MCP server（stdio）：把对页的工具暴露给 AI 客户端。
+ * MCP server（stdio）：把我要读书的工具暴露给 AI 客户端。
  *   node tools/mcp.mjs
  *
  * 原则：AI 不能直接写 papers/ 或 _duiye/annotations/，

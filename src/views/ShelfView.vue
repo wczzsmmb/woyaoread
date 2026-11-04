@@ -2,18 +2,21 @@
 import { computed, onMounted, ref } from 'vue'
 import { fetchIndex } from '../lib/api'
 import { openArticle } from '../lib/router'
-import { progressOf, recentIds } from '../lib/progress'
+import { isStarred, progressOf, recentIds } from '../lib/progress'
+import { layout } from '../lib/layout'
 import type { ArticleMeta, SiteIndex } from '../lib/types'
 
 const index = ref<SiteIndex | null>(null)
 const error = ref('')
 const query = ref('')
 const activeCat = ref<string>('')
+const onlyStar = ref(false)
+const logoUrl = './logo.svg'
 
 onMounted(async () => {
   try {
     index.value = await fetchIndex()
-    document.title = index.value.site.title || '对页'
+    document.title = index.value.site.title || '我要读书'
   } catch (e) {
     error.value = String((e as Error).message || e)
   }
@@ -38,6 +41,7 @@ const articles = computed(() => {
   const all = index.value?.articles || []
   const q = query.value.trim().toLowerCase()
   return all.filter((a) => {
+    if (onlyStar.value && !isStarred(a.id)) return false
     if (activeCat.value && !a.cats.includes(activeCat.value)) {
       if (!a.cats.join('/').startsWith(activeCat.value)) return false
     }
@@ -65,8 +69,11 @@ void (null as unknown as ArticleMeta)
 <template>
   <div class="shelf">
     <header class="hero">
-      <h1 class="hero__name">{{ index?.site.title || '对页' }}</h1>
-      <p class="hero__sub">{{ index?.site.subtitle || '左选 · 中读 · 右对照' }}</p>
+      <h1 class="hero__name">
+        <img class="hero__logo" :src="logoUrl" alt="" width="30" height="30" />
+        <span>{{ index?.site.title || '我要读书' }}</span>
+      </h1>
+
 
       <label class="hero__search">
         <svg class="hero__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
@@ -77,7 +84,10 @@ void (null as unknown as ArticleMeta)
       </label>
 
       <div class="chips">
-        <button class="chip" :class="{ 'is-on': !activeCat }" @click="activeCat = ''">
+        <button class="chip chip--star" :class="{ 'is-on': onlyStar }" @click="onlyStar = !onlyStar">
+          收藏<em>{{ index?.articles.filter((a) => isStarred(a.id)).length || 0 }}</em>
+        </button>
+        <button class="chip" :class="{ 'is-on': !activeCat && !onlyStar }" @click="(activeCat = ''), (onlyStar = false)">
           全部<em>{{ index?.articles.length || 0 }}</em>
         </button>
         <button
@@ -123,7 +133,18 @@ void (null as unknown as ArticleMeta)
       <section class="rack">
         <div class="rack__head">
           <h2>{{ activeCat || '全部篇目' }}</h2>
-          <a class="rack__more">{{ articles.length }} 篇</a>
+          <div class="rack__side">
+            <button
+              class="chip chip--cover"
+              :class="{ 'is-on': layout.covers }"
+              :aria-pressed="layout.covers"
+              :title="layout.covers ? '隐藏封面' : '显示封面'"
+              @click="layout.covers = !layout.covers"
+            >
+              封面
+            </button>
+            <a class="rack__more">{{ articles.length }} 篇</a>
+          </div>
         </div>
         <div class="books">
           <button
@@ -140,7 +161,10 @@ void (null as unknown as ArticleMeta)
             </span>
             <span class="book__name">{{ a.title }}</span>
             <span class="book__author">{{ a.authors || a.cats[0] || '未分类' }}</span>
-            <span class="book__meta">{{ a.blocks }} 块 · {{ ratioText(a.alignRatio) }}</span>
+            <span class="book__meta">
+              <span v-if="isStarred(a.id)" class="book__star">★</span>
+              {{ a.blocks }} 块 · {{ ratioText(a.alignRatio) }}
+            </span>
           </button>
         </div>
         <p v-if="!articles.length" class="state pad">没有匹配的篇目。</p>

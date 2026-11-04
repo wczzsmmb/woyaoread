@@ -3,6 +3,7 @@ import { reactive, watch } from 'vue'
 
 const K_PROGRESS = 'duiye:progress:v1'
 const K_RECENT = 'duiye:recent:v1'
+const K_STARRED = 'duiye:starred:v1'
 const MAX_RECENT = 12
 
 function load<T extends object>(key: string, fallback: T): T {
@@ -16,9 +17,20 @@ function load<T extends object>(key: string, fallback: T): T {
 
 export const progress = reactive<Record<string, number>>(load(K_PROGRESS, {}))
 export const recent = reactive<{ ids: string[] }>(load(K_RECENT, { ids: [] }))
+export const starred = reactive<{ ids: string[] }>(load(K_STARRED, { ids: [] }))
 
 watch(progress, (v) => localStorage.setItem(K_PROGRESS, JSON.stringify(v)), { deep: true })
 watch(recent, (v) => localStorage.setItem(K_RECENT, JSON.stringify(v)), { deep: true })
+watch(starred, (v) => localStorage.setItem(K_STARRED, JSON.stringify(v)), { deep: true })
+
+export const isStarred = (id: string) => starred.ids.includes(id)
+
+export function toggleStar(id: string) {
+  const i = starred.ids.indexOf(id)
+  if (i >= 0) starred.ids.splice(i, 1)
+  else starred.ids.unshift(id)
+  return isStarred(id)
+}
 
 export const progressOf = (id: string) => progress[id] || 0
 

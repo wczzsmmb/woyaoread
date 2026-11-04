@@ -1,0 +1,285 @@
+/* ============================================================
+   批注交互层样式
+   - .selbar：选中文字后弹出的两个独立悬浮面板（色点条 + 动作条）
+   - ::highlight(mk-*)：CSS Custom Highlight API 的画法。
+     线条 / 底色都由浏览器按 Range 真实文字宽度绘制：
+     不插 span、不算字符数、不用绝对定位长线，长度天然贴合文字。
+   ============================================================ */
+
+/* ------------------------------ 色点 + 动作条 ------------------------------ */
+
+/* 容器只是定位：两块各自有底 */
+.selbar {
+  position: fixed;
+  z-index: 92;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  box-shadow: none;
+  transform: translate(-50%, -100%);
+  animation: fade 0.12s ease;
+  pointer-events: none;
+}
+.selbar > * {
+  pointer-events: auto;
+}
+
+/* 颜色栏：独立的小药丸 */
+.selbar__dots {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 10px 15px;
+  background: color-mix(in srgb, #24262a 96%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.55);
+}
+.selbar__dot {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.selbar__dot i {
+  display: block;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+.selbar__dot svg {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  color: #1d2025;
+}
+.selbar__dot.is-pick svg {
+  display: block;
+}
+.selbar__dot:not(.is-pick) svg {
+  display: none;
+}
+
+/* 动作条：独立的圆角深灰面板，尾巴只挂在它上面 */
+.selbar__acts {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 7px 8px 5px;
+  background: color-mix(in srgb, #24262a 96%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.55);
+}
+.selbar__acts::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: inherit;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+/* 选区贴近视口顶部：工具条落到文字下方，尾巴翻到上面 */
+.selbar.is-below {
+  transform: translate(-50%, 0);
+}
+.selbar.is-below .selbar__acts::after {
+  display: none;
+}
+.selbar.is-below .selbar__dots::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: inherit;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.selbar__acts button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 45px;
+  padding: 7px 5px 5px;
+  border-radius: 9px;
+  font-family: var(--font-ui, -apple-system, sans-serif);
+  font-size: 10px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.selbar__acts button svg {
+  width: 20px;
+  height: 20px;
+}
+.selbar__acts button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+/* 编辑已有划线：当前样式打个蓝点，一眼看清现在是什么 */
+.selbar__acts button.is-cur::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: #80aaf8;
+}
+
+@media (max-width: 520px) {
+  .selbar {
+    gap: 10px;
+  }
+  .selbar__dots {
+    gap: 12px;
+    padding: 8px 12px;
+  }
+  .selbar__dot {
+    width: 22px;
+    height: 22px;
+  }
+  .selbar__dot i {
+    width: 17px;
+    height: 17px;
+  }
+  .selbar__acts button {
+    min-width: 40px;
+    padding: 6px 3px 5px;
+    font-size: 9.5px;
+  }
+  .selbar__acts button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* 自定义左键拖选：不产生原生 selection，避免系统划词软件抓取 */
+::highlight(sel-preview) {
+  background-color: color-mix(in srgb, var(--blue, #1e7fff) 20%, transparent);
+  color: inherit;
+}
+
+/* ------------------------------ ::highlight 画法 ------------------------------ */
+/* 不允许整行 border-bottom / 长绝对定位线：一切由 Range 真实文字矩形决定。
+   参数照 UI参考/code_artifact.html：马克笔是一整块半透明底色，
+   波浪/直线 1.5px、往下让 5px 才不贴住笔画。 */
+
+:root {
+  /* 马克笔：金黄是 code_artifact 的 #fef08a，其余四色按同一明度配 */
+  --mark-hl: #fef08a;
+  --mark-hl-green: #d8f0d2;
+  --mark-hl-blue: #d3e7fb;
+  --mark-hl-purple: #e8d9f8;
+  --mark-hl-pink: #fbdcdf;
+  /* 波浪 / 直线：线的颜色，同样摘自 code_artifact（蓝 #3b82f6、红 #ef4444） */
+  --mark-wave: #3b82f6;
+  --mark-wave-green: #22c55e;
+  --mark-wave-pink: #e96f86;
+  --mark-wave-purple: #9b72c8;
+  --mark-line: #ef4444;
+  /* 虚线：有想法的句子自动画一条，也可以手动加 */
+  --mark-dash: #e2685f;
+  --mark-thick: 1.5px;
+  --mark-offset: 5px;
+}
+:root[data-theme="dark"] {
+  --mark-hl: #6d5a13;
+  --mark-hl-green: #244a2b;
+  --mark-hl-blue: #1e3a5c;
+  --mark-hl-purple: #372550;
+  --mark-hl-pink: #4f2429;
+  --mark-wave: #60a5fa;
+  --mark-wave-green: #4ade80;
+  --mark-wave-pink: #f9a8b4;
+  --mark-wave-purple: #c4b5fd;
+  --mark-line: #f87171;
+  --mark-dash: #f08b83;
+}
+
+/* 马克笔：半透明底色，只盖住 Range 覆盖的字 */
+::highlight(mk-highlight) {
+  background-color: var(--mark-hl);
+}
+::highlight(mk-hl-green) {
+  background-color: var(--mark-hl-green);
+}
+::highlight(mk-hl-blue) {
+  background-color: var(--mark-hl-blue);
+}
+::highlight(mk-hl-purple) {
+  background-color: var(--mark-hl-purple);
+}
+::highlight(mk-hl-pink) {
+  background-color: var(--mark-hl-pink);
+}
+
+/* 波浪：细、圆头正弦，贴住被标文字的宽度 */
+::highlight(mk-wave) {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--mark-wave);
+  text-decoration-thickness: var(--mark-thick);
+  text-underline-offset: var(--mark-offset);
+}
+::highlight(mk-wave-green) {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--mark-wave-green);
+  text-decoration-thickness: var(--mark-thick);
+  text-underline-offset: var(--mark-offset);
+}
+::highlight(mk-wave-pink) {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--mark-wave-pink);
+  text-decoration-thickness: var(--mark-thick);
+  text-underline-offset: var(--mark-offset);
+}
+::highlight(mk-wave-purple) {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--mark-wave-purple);
+  text-decoration-thickness: var(--mark-thick);
+  text-underline-offset: var(--mark-offset);
+}
+
+/* 直线：红实线，细，贴字底 */
+::highlight(mk-line) {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: var(--mark-line);
+  text-decoration-thickness: var(--mark-thick);
+  text-underline-offset: var(--mark-offset);
+}
+
+/* 虚线：写过想法的句子自动带一条（和马克笔/波浪可以叠着画），也可手动只画虚线 */
+::highlight(mk-dash) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: var(--mark-dash);
+  text-decoration-thickness: var(--mark-thick);
+  text-underline-offset: 6px;
+}

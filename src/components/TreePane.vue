@@ -9,8 +9,12 @@ const props = withDefaults(
     toc?: { h: string; text: string; depth: number }[]
     keywords?: string[]
     activeH?: string
+    title?: string
+    author?: string
+    year?: number | null
+    pct?: number
   }>(),
-  { toc: () => [], keywords: () => [] },
+  { toc: () => [], keywords: () => [], title: '', author: '', year: null, pct: 0 },
 )
 
 const emit = defineEmits<{
@@ -34,20 +38,29 @@ void props
       @input="emit('update:query', ($event.target as HTMLInputElement).value)"
     />
 
-    <div v-if="toc.length || keywords.length" class="tree__sect">
-      <div class="tree__label">本篇</div>
+    <div class="toc__book">
+      <div class="toc__title">{{ title }}</div>
+      <div class="toc__meta">
+        <template v-if="author">{{ author }} · </template>
+        <template v-if="year">{{ year }} · </template>
+        已读 {{ Math.round((pct || 0) * 100) }}%
+      </div>
+    </div>
+
+    <div v-if="toc.length" class="toc__list">
       <button
         v-for="t in toc"
         :key="t.h"
-        class="tree__toc"
+        class="toc__item"
         :class="[`lvl-${t.depth}`, { 'is-on': activeH === t.h }]"
         @click="emit('jump', t.h)"
       >
         {{ t.text }}
       </button>
-      <div v-if="keywords.length" class="tree__kws">
-        <span v-for="k in keywords" :key="k" class="kw">#{{ k }}</span>
-      </div>
+    </div>
+
+    <div v-if="keywords.length" class="tree__kws">
+      <span v-for="k in keywords" :key="k" class="kw">#{{ k }}</span>
     </div>
 
     <nav class="tree__list">

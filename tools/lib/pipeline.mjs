@@ -89,7 +89,7 @@ export async function buildAll(root = process.cwd(), opts = {}) {
 
   const { articles: found, cats, errors, warnings } = await scan(root)
 
-  let site = { title: '对页', subtitle: '' }
+  let site = { title: '我要读书', subtitle: '' }
   const siteYml = await readText(path.join(root, 'site.yml'))
   if (siteYml) {
     const parsed = yaml.load(siteYml)

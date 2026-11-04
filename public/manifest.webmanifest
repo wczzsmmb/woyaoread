@@ -1,7 +1,7 @@
 {
-  "name": "对页",
-  "short_name": "对页",
-  "description": "三栏 Markdown 精读器：左选、中读、右对照",
+  "name": "我要读书",
+  "short_name": "我要读书",
+  "description": "Markdown 精读器：对开翻页 / 中英对照",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

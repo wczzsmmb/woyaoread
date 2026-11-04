@@ -1,29 +1,96 @@
 <script setup lang="ts">
-import type { Article, ResolvedAnn } from '../lib/types'
+import { computed } from 'vue'
+import type { Article, ResolvedAnn, Row } from '../lib/types'
 
-defineProps<{
+const props = defineProps<{
   article: Article
+  /** 实际渲染的行（正文 H1 已被去掉），章节归类要用这一套 */
+  rows: Row[]
   annotations: ResolvedAnn[]
   lost: { key: string; item: any }[]
   online: boolean
   drafts: number
   loading: boolean
+  pct: number
+  /** 只有划线、没写想法的条数（不占榜，只报个数字） */
+  marks?: number
 }>()
 
 const emit = defineEmits<{
   (e: 'jump', rowIndex: number): void
   (e: 'refresh'): void
+  (e: 'copied'): void
+  (e: 'remove', key: string): void
+  (e: 'edit', key: string): void
 }>()
+
+const MARK_LABEL: Record<string, string> = {
+  highlight: '马克笔',
+  'hl-green': '绿马克笔',
+  'hl-blue': '蓝马克笔',
+  'hl-purple': '紫马克笔',
+  'hl-pink': '粉马克笔',
+  wave: '蓝波浪线',
+  'wave-green': '绿波浪线',
+  'wave-pink': '粉波浪线',
+  'wave-purple': '紫波浪线',
+  wave2: '橙波浪线',
+  line: '直线',
+  dash: '虚线',
+}
 
 const esc = (s: string) =>
   String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+/** 按章节归类：每条批注归到它前面最近的一、二级标题下 */
+const groups = computed(() => {
+  const rows = props.rows
+  const marks: { i: number; title: string }[] = [{ i: -1, title: '开篇' }]
+  rows.forEach((r, i) => {
+    if (r.type === 'heading' && (r.depth ?? 9) <= 2 && (r.depth ?? 9) > 1) marks.push({ i, title: r.text })
+  })
+  const out: { key: string; title: string; items: ResolvedAnn[] }[] = []
+  for (const a of props.annotations) {
+    let title = '开篇'
+    let key = 'top'
+    for (const m of marks) {
+      if (m.i <= a.rowIndex) {
+        title = m.title
+        key = `${m.i}`
+      }
+    }
+    const g = out.find((x) => x.key === key)
+    if (g) g.items.push(a)
+    else out.push({ key, title, items: [a] })
+  }
+  return out
+})
+
+const words = computed(() => props.annotations.reduce((n, a) => n + (a.text?.length || 0), 0))
+
+async function copyAll() {
+  const text = groups.value
+    .map((g) => {
+      const items = g.items
+        .map((a) => `${a.quote}${a.text ? `\n　　${a.text}` : ''}`)
+        .join('\n\n')
+      return `【${g.title}】\n${items}`
+    })
+    .join('\n\n')
+  try {
+    await navigator.clipboard.writeText(text)
+    emit('copied')
+  } catch {}
+}
 </script>
 
 <template>
-  <div class="pane">
-    <div class="pane__head">
-      <span>批注</span>
-      <span class="muted">{{ annotations.length }}</span>
+  <div class="pane notes">
+    <div class="notes__head">
+      <div class="notes__name">{{ article.title }}</div>
+      <div class="notes__sub">
+        已读到 {{ Math.round(pct * 100) }}% · {{ annotations.length }} 条想法<template v-if="marks"> · {{ marks }} 条划线</template><template v-if="lost.length"> · {{ lost.length }} 条待重新定位</template>
+      </div>
     </div>
 
     <p v-if="!online" class="pane__hint">
@@ -34,25 +101,39 @@ const esc = (s: string) =>
       有 {{ drafts }} 条草稿待补写，正在尝试…<button class="link" @click="emit('refresh')">重试</button>
     </p>
 
-    <div v-if="annotations.length" class="annolist">
-      <button v-for="a in annotations" :key="a.key" class="annolist__item" @click="emit('jump', a.rowIndex)">
-        <span class="annolist__loc">
-          {{ String(a.rowIndex + 1).padStart(2, '0') }} · {{ a.layer === 'zh' ? '对照' : '正文' }}
-          <em v-if="a.relinkedNow">已重定位</em>
-        </span>
-        <span class="annolist__text">{{ a.text }}</span>
-      </button>
-    </div>
-    <p v-else-if="online" class="pane__hint">还没有批注。在段落右侧（手机上是点一下段落）点 ✎ 就能写。</p>
+    <p v-if="loading" class="pane__hint">载入批注…</p>
+
+    <template v-for="g in groups" :key="g.key">
+      <h4 class="notes__chapter">{{ g.title }}</h4>
+      <div v-for="a in g.items" :key="a.key" class="notecard" :data-row="a.rowIndex" :data-key="a.key">
+        <button class="notecard__main" @click="emit('jump', a.rowIndex)">
+          <span class="notecard__quote">{{ a.quote || '（原文已改动）' }}</span>
+          <span v-if="a.text" class="notecard__body" v-html="esc(a.text).replace(/\n/g, '<br>')"></span>
+          <span class="notecard__foot">
+            {{ a.layer === 'zh' ? '对照' : '正文' }}
+            <em v-if="a.mark">{{ MARK_LABEL[a.mark] || '划线' }}</em>
+            <em v-if="a.relinkedNow">· 已重新定位</em>
+          </span>
+        </button>
+        <button class="notecard__del" title="修改这条" @click.stop="emit('edit', a.key)">✎</button>
+        <button class="notecard__del" title="删除这条" @click.stop="emit('remove', a.key)">✕</button>
+      </div>
+    </template>
+
+    <p v-if="!annotations.length && !loading" class="pane__hint">
+      还没有想法。选中正文里的句子，点「写想法」；只划线不算想法。
+    </p>
 
     <div v-if="lost.length" class="pane__lost">
-      <div class="pane__head"><span>失联批注</span><span class="muted">{{ lost.length }}</span></div>
-      <p class="pane__hint">原文可能改写过，位置丢了，内容还在。</p>
+      <div class="pane__head"><span>找不到位置</span><span class="muted">{{ lost.length }}</span></div>
       <div v-for="l in lost" :key="l.key" class="lostitem">
-        <span class="annolist__loc">{{ l.key }}</span>
-        <div class="annolist__text">{{ l.item.text }}</div>
-        <div v-if="l.item.quote" class="lostitem__quote">{{ l.item.quote }}</div>
+        <div class="lostitem__quote">{{ l.item.quote || l.item.text }}</div>
       </div>
+    </div>
+
+    <div v-if="annotations.length" class="notes__foot">
+      <span class="notes__sum">共 {{ words }} 字笔记</span>
+      <button class="notes__copy" @click="copyAll">复制全部笔记 · {{ annotations.length }}</button>
     </div>
   </div>
 </template>

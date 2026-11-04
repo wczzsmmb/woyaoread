@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "对页 · 三栏 Markdown 精读器（本地静态，无数据库）",
+  "description": "我要读书 · Markdown 精读器（对开翻页 / 中英对照，本地静态，无数据库）",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

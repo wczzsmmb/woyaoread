@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="对页阅读项目标志（顶栏灰版），深灰圆角底色与展开的双页书本">
+  <!-- The square is the app-icon background. The area outside its corners is transparent. -->
+  <rect x="72" y="44" width="885" height="886" rx="237" fill="#5d626a"/>
+  <!-- Left page: an uninterrupted white page, bending toward the book's spine. -->
+  <path d="M 171,381 C 171,346 189,335 219,332 C 328,320 442,371 517,429 L 517,780 C 423,723 318,702 228,714 C 191,719 170,708 170,677 Z" fill="#ffffff"/>
+  <!-- Lower layer of the right-hand page, visible along its bottom edge. -->
+  <path d="M 517,780 C 618,703 725,675 806,704 C 846,720 861,704 862,670 L 862,627 C 852,653 840,662 810,658 C 713,647 605,689 517,780 Z" fill="#c9cbcf"/>
+  <!-- Right page: slightly cooler for gentle dimension. -->
+  <path d="M 517,429 C 597,348 720,310 812,324 C 845,329 862,346 862,382 L 862,624 C 862,656 843,665 813,661 C 701,648 596,702 517,780 Z" fill="#e9eaec"/>
+</svg>

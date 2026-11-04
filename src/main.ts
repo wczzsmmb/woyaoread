@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import 'katex/dist/katex.min.css'
 import './styles/base.css'
+import './styles/annotator.css'
 import { startRouter } from './lib/router'
 import { applyVars, layout } from './lib/layout'
 

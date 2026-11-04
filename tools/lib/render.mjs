@@ -88,8 +88,21 @@ function visibleText(token, html) {
  * md → blocks
  * @returns {{ type:string, html:string, text:string, depth:number|null, h:string }[]}
  */
+/**
+ * 中文里的区间写成 `2007~2018`，两个落单的波浪号会被 GFM 配成删除线（<del>）。
+ * 先把落单的 `~` 转义掉；代码块、行内代码里的不动。
+ */
+const CODE_SPLIT = /(```[\s\S]*?```|`[^`\n]*`)/
+function escapeTilde(md) {
+  if (!md || !md.includes('~')) return md
+  return md
+    .split(CODE_SPLIT)
+    .map((seg, i) => (i % 2 === 1 ? seg : seg.replace(/(^|[^~\\])~(?!~)/g, '$1\\~')))
+    .join('')
+}
+
 export function toBlocks(md, layer) {
-  const tokens = marked.lexer(md || '')
+  const tokens = marked.lexer(escapeTilde(md) || '')
   const blocks = []
   const seen = new Map()
   for (const tk of tokens) {

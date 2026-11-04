@@ -1,85 +1,139 @@
 <script setup lang="ts">
-import { layout, RATIOS, type Ratio } from '../lib/layout'
+import { computed } from 'vue'
+import {
+  FONT_LABEL,
+  layout,
+  MEASURE_LABEL,
+  RATIOS,
+  THEME_LABEL,
+  type FontKind,
+  type Measure,
+  type Mode,
+  type Ratio,
+  type Theme,
+} from '../lib/layout'
 
-defineProps<{ hasZh: boolean }>()
-const emit = defineEmits<{ (e: 'close'): void }>()
+const props = defineProps<{ hasZh: boolean }>()
 
 const ratios = Object.keys(RATIOS) as Ratio[]
+const modes: { key: Mode; name: string }[] = [
+  { key: 'spread', name: '对开' },
+  { key: 'compare', name: '对照' },
+  { key: 'single', name: '单栏' },
+]
+const measures = Object.keys(MEASURE_LABEL) as Measure[]
+const fonts = Object.keys(FONT_LABEL) as FontKind[]
+const themes: { key: Theme; bg: string; line: string }[] = [
+  { key: 'light', bg: '#ffffff', line: '#e6e7e9' },
+  { key: 'sepia', bg: '#f8f4ea', line: '#e5dccc' },
+  { key: 'green', bg: '#e6eddf', line: '#cfd9c7' },
+  { key: 'dark', bg: '#1c1d20', line: '#2b2c2f' },
+]
+const compareOk = computed(() => props.hasZh)
 </script>
 
 <template>
-  <div class="overlay" @click.self="emit('close')">
-    <aside class="panel">
-      <div class="panel__head">
-        <span>阅读设置</span>
-        <button class="icon" @click="emit('close')" aria-label="关闭">✕</button>
+  <div class="settings">
+    <section class="field">
+      <div class="field__label">版式</div>
+      <div class="seg">
+        <button
+          v-for="m in modes"
+          :key="m.key"
+          :class="{ 'is-on': layout.mode === m.key }"
+          :disabled="m.key === 'compare' && !compareOk"
+          @click="layout.mode = m.key"
+        >
+          {{ m.name }}
+        </button>
       </div>
+    </section>
 
-      <section class="field">
-        <div class="field__label">栏位</div>
-        <div class="checks">
-          <label><input v-model="layout.c1" type="checkbox" /><span>第一栏（选篇）</span></label>
-          <label><input v-model="layout.c2" type="checkbox" /><span>第二栏（正文）</span></label>
-          <label><input v-model="layout.c3" type="checkbox" /><span>第三栏（对照/批注/导航）</span></label>
-        </div>
-        <p class="hint">三栏都关 = 沉浸阅读（鼠标移到顶部边缘唤出工具条）。</p>
-      </section>
+    <section class="field">
+      <div class="field__label">字号 <em>{{ layout.fontSize }}px</em></div>
+      <div class="aaslider">
+        <span>A</span>
+        <input v-model.number="layout.fontSize" class="range" type="range" min="14" max="26" step="1" />
+        <span class="aaslider__max">A</span>
+      </div>
+    </section>
 
-      <section class="field">
-        <div class="field__label">第三栏显示</div>
-        <div class="seg">
-          <button :class="{ 'is-on': layout.c3Mode === 'compare' }" :disabled="!hasZh" @click="layout.c3Mode = 'compare'">
-            对照
-          </button>
-          <button :class="{ 'is-on': layout.c3Mode === 'annotations' }" @click="layout.c3Mode = 'annotations'">
-            批注
-          </button>
-          <button :class="{ 'is-on': layout.c3Mode === 'nav' }" @click="layout.c3Mode = 'nav'">导航</button>
-        </div>
-      </section>
+    <section class="field">
+      <div class="field__label">行距 <em>{{ layout.lineHeight.toFixed(2) }}</em></div>
+      <input v-model.number="layout.lineHeight" class="range" type="range" min="1.4" max="2.2" step="0.05" />
+    </section>
 
-      <section class="field">
-        <div class="field__label">正文 / 对照 宽度</div>
-        <div class="seg seg--wrap">
-          <button
-            v-for="r in ratios"
-            :key="r"
-            :class="{ 'is-on': layout.ratio === r }"
-            :disabled="!hasZh"
-            @click="layout.ratio = r"
-          >
-            {{ r }}
-          </button>
-        </div>
-      </section>
+    <section class="field">
+      <div class="field__label">页边距</div>
+      <div class="seg">
+        <button
+          v-for="m in measures"
+          :key="m"
+          :class="{ 'is-on': layout.measure === m }"
+          @click="layout.measure = m"
+        >
+          {{ MEASURE_LABEL[m] }}
+        </button>
+      </div>
+    </section>
 
-      <section class="field">
-        <div class="field__label">第一栏宽度</div>
-        <div class="seg">
-          <button
-            v-for="w in [200, 240, 280, 320]"
-            :key="w"
-            :class="{ 'is-on': layout.sidebar === w }"
-            @click="layout.sidebar = w as 200 | 240 | 280 | 320"
-          >
-            {{ w }}
-          </button>
-        </div>
-      </section>
+    <section class="field">
+      <div class="field__label">字体</div>
+      <div class="seg">
+        <button
+          v-for="f in fonts"
+          :key="f"
+          :class="{ 'is-on': layout.font === f }"
+          :style="{ fontFamily: f === 'kai' ? 'var(--font-ref)' : f === 'hei' ? 'var(--font-ui)' : 'var(--font-doc)' }"
+          @click="layout.font = f"
+        >
+          {{ FONT_LABEL[f] }}
+        </button>
+      </div>
+    </section>
 
-      <section class="field">
-        <div class="field__label">字号 <em>{{ layout.fontSize }}px</em></div>
-        <input v-model.number="layout.fontSize" class="range" type="range" min="14" max="24" step="1" />
-      </section>
+    <section class="field">
+      <div class="field__label">纸色</div>
+      <div class="swatches">
+        <button
+          v-for="t in themes"
+          :key="t.key"
+          :class="{ 'is-on': layout.theme === t.key }"
+          @click="layout.theme = t.key"
+        >
+          <i :style="{ background: t.bg, borderColor: t.line }"></i>
+          <span>{{ THEME_LABEL[t.key] }}</span>
+        </button>
+      </div>
+    </section>
 
-      <section class="field">
-        <div class="field__label">行高 <em>{{ layout.lineHeight.toFixed(1) }}</em></div>
-        <input v-model.number="layout.lineHeight" class="range" type="range" min="1.5" max="2.4" step="0.1" />
-      </section>
+    <section v-if="compareOk" class="field">
+      <div class="field__label">对照宽度 <em>{{ layout.ratio }}</em></div>
+      <div class="seg seg--wrap">
+        <button
+          v-for="r in ratios"
+          :key="r"
+          :class="{ 'is-on': layout.ratio === r }"
+          @click="layout.ratio = r"
+        >
+          {{ r }}
+        </button>
+      </div>
+    </section>
 
-      <section class="field">
-        <label class="checks"><input v-model="layout.immersive" type="checkbox" /><span>沉浸模式（隐藏顶栏，鼠标贴顶唤出）</span></label>
-      </section>
-    </aside>
+    <section class="field">
+      <div class="checks">
+        <label>
+          <input v-model="layout.indent" type="checkbox" />
+          <span>首行缩进两字</span>
+        </label>
+        <label>
+          <input v-model="layout.immersive" type="checkbox" />
+          <span>沉浸模式（隐藏顶栏，鼠标贴顶唤出）</span>
+        </label>
+      </div>
+    </section>
+
+    <p class="hint">← → 翻页 · M 换版式 · T 目录 · N 批注 · S 排版 · D 纸色 · Esc 关闭</p>
   </div>
 </template>

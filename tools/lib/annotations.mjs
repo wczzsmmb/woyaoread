@@ -54,12 +54,31 @@ async function writeAtomic(root, id, data) {
   await fs.rename(tmp, target)
 }
 
-export function writeAnnotation(root, id, { key, layer, quote, text }) {
+const MARKS = ['highlight', 'hl-green', 'hl-blue', 'hl-purple', 'hl-pink', 'wave', 'wave-green', 'wave-pink', 'wave-purple', 'wave2', 'line', 'dash']
+
+/** 锚定补充：n = quote 在块内第几处（0 起），ac = 前后文；都可选，不传保留原值 */
+function sanitizeAnchor(anchor, prev) {
+  if (!anchor || typeof anchor !== 'object') return { n: prev.n, ac: prev.ac }
+  const out = {}
+  const n = anchor.n
+  if (Number.isInteger(n) && n >= 0 && n <= 99) out.n = n
+  else if (n === undefined || n === null) out.n = prev.n
+  if (anchor.ac && typeof anchor.ac === 'object') {
+    out.ac = {
+      b: typeof anchor.ac.b === 'string' ? anchor.ac.b.slice(0, 24) : '',
+      a: typeof anchor.ac.a === 'string' ? anchor.ac.a.slice(0, 24) : '',
+    }
+  } else if (anchor.ac === undefined || anchor.ac === null) out.ac = prev.ac
+  return out
+}
+
+export function writeAnnotation(root, id, { key, layer, quote, text, mark, anchor }) {
   if (!ID_RE.test(id)) throw new Error(`非法编号：${id}`)
   if (!KEY_RE.test(key)) throw new Error(`非法批注键：${key}`)
   if (!['index', 'zh'].includes(layer)) throw new Error(`非法层名：${layer}`)
   if (quote && quote.length > MAX_QUOTE) throw new Error('quote 超过 2000 字')
   if (text && text.length > MAX_TEXT) throw new Error('text 超过 20000 字')
+  if (mark && !MARKS.includes(mark)) throw new Error(`非法划线样式：${mark}`)
 
   // 同一文件的写入串行化
   chain = chain.then(async () => {
@@ -67,17 +86,26 @@ export function writeAnnotation(root, id, { key, layer, quote, text }) {
     data.v = 1
     data.article = id
     data.items = data.items || {}
-    if (!text) {
+    // text 与 mark 都空 = 删除；只有 mark 是「划线」，只有 text 是「想法」
+    if (!text && !mark) {
       delete data.items[key]
     } else {
       const prev = data.items[key] || {}
-      data.items[key] = {
+      const a = sanitizeAnchor(anchor, prev)
+      // 纯想法不占记号：虚线是「有想法」的渲染结果，不是存下来的 mark
+      const nextMark = mark || prev.mark || (text ? '' : 'line')
+      const next = {
         layer,
         quote: quote || prev.quote || '',
-        text,
+        text: text || '',
         at: new Date().toISOString(),
         relinked: prev.relinked || 0,
       }
+      if (nextMark) next.mark = nextMark
+      // JSON.stringify 会丢 undefined：只写有值的锚定字段
+      if (a.n !== undefined) next.n = a.n
+      if (a.ac !== undefined && a.ac !== null) next.ac = a.ac
+      data.items[key] = next
     }
     await writeAtomic(root, id, data)
     return data

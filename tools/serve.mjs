@@ -109,7 +109,13 @@ async function serveStatic(req, res, urlPath) {
   const ext = path.extname(target).toLowerCase()
   const headers = {
     'content-type': MIME[ext] || 'application/octet-stream',
-    'cache-control': rel.startsWith('/data/') || rel.startsWith('/media/') ? 'no-cache' : 'public, max-age=600',
+    // index.html / sw.js 必须每次回源，否则改动要等 10 分钟才看得见；
+    // 带哈希的资源照旧长缓存
+    'cache-control': /(^\/index\.html$|^\/sw\.js$|^\/manifest\.webmanifest$)/.test(rel)
+      ? 'no-cache, must-revalidate'
+      : rel.startsWith('/data/') || rel.startsWith('/media/')
+        ? 'no-cache'
+        : 'public, max-age=600',
   }
   const accept = String(req.headers['accept-encoding'] || '')
   if (COMPRESSIBLE.test(rel) && accept.includes('gzip') && buf.length > 1024) {
@@ -176,7 +182,7 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, HOST, () => {
-  console.log(`对页 · http://${HOST}:${PORT}`)
+  console.log(`我要读书 · http://${HOST}:${PORT}`)
   console.log(`  静态目录 ${DIST}`)
   console.log(`  批注数据 _duiye/annotations/`)
   if (!fs.access(DIST).then(() => true, () => false)) {

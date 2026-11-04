@@ -1,6 +1,6 @@
 import { computed, reactive } from 'vue'
 import { apiGet, apiPut, norm, resetApiBase } from './api'
-import type { AnnItem, Article, ResolvedAnn } from './types'
+import type { AnnItem, Article, MarkKind, ResolvedAnn } from './types'
 
 export const ann = reactive({
   online: false,
@@ -44,23 +44,77 @@ export async function loadAnnotations(id: string) {
     const data = await apiGet(`/api/annotations/${id}`)
     ann.items = data?.items || {}
     ann.online = true
+    writeMirror(id)
     if (ann.drafts) await flushDrafts(id)
   } catch (e) {
-    ann.items = {}
-    ann.error = String((e as Error).message || e)
+    // 服务不在：本机 localStorage 镜像兑底，刷新/离线也能恢复
+    const mirror = readMirror(id)
+    ann.items = mirror || {}
+    ann.error = mirror ? '服务未启动，已用本机缓存' : String((e as Error).message || e)
   } finally {
     ann.loading = false
   }
 }
 
+const MIRROR = (id: string) => `duiye:ann:${id}`
+function writeMirror(id: string) {
+  try {
+    localStorage.setItem(MIRROR(id), JSON.stringify({ v: 1, article: id, items: ann.items }))
+  } catch {}
+}
+function readMirror(id: string): Record<string, AnnItem> | null {
+  try {
+    const d = JSON.parse(localStorage.getItem(MIRROR(id)) || 'null')
+    if (d && d.items && typeof d.items === 'object') return d.items
+  } catch {}
+  return null
+}
+
+/**
+ * 前端存的是扁的 n / ac（用起来方便），服务端协议收的是 anchor: { n, ac }。
+ * 这层负责转过去 —— 以前直接 PUT 扁字段，服务端 anchor 永远是空的，
+ * 同文重复句的「第 n 处 / 前后文」就从来没存下来过。
+ */
+function toBody(payload: {
+  key: string
+  layer: 'index' | 'zh'
+  quote: string
+  text: string
+  mark?: MarkKind
+  n?: number
+  ac?: { b?: string; a?: string }
+}) {
+  const { n, ac, ...rest } = payload
+  const anchor: { n?: number; ac?: { b?: string; a?: string } } = {}
+  if (typeof n === 'number') anchor.n = n
+  if (ac) anchor.ac = ac
+  return Object.keys(anchor).length ? { ...rest, anchor } : rest
+}
+
 export async function saveAnnotation(
   id: string,
-  payload: { key: string; layer: 'index' | 'zh'; quote: string; text: string },
+  payload: {
+    key: string
+    layer: 'index' | 'zh'
+    quote: string
+    text: string
+    mark?: MarkKind
+    n?: number
+    ac?: { b?: string; a?: string }
+  },
 ) {
   try {
-    await apiPut(`/api/annotations/${id}`, payload)
-    if (payload.text) ann.items[payload.key] = { ...payload, at: new Date().toISOString() }
-    else delete ann.items[payload.key]
+    await apiPut(`/api/annotations/${id}`, toBody(payload))
+    if (payload.text || payload.mark) {
+      const prev = ann.items[payload.key]
+      ann.items[payload.key] = {
+        ...payload,
+        at: new Date().toISOString(),
+        n: payload.n ?? prev?.n,
+        ac: payload.ac ?? prev?.ac,
+      }
+    } else delete ann.items[payload.key]
+    writeMirror(id)
     try {
       localStorage.removeItem(KEY(id, payload.key))
     } catch {}
@@ -68,7 +122,7 @@ export async function saveAnnotation(
     ann.drafts = scanDrafts(id)
     return true
   } catch {
-    // 草稿箱：仅缓冲，主存储永远是 _duiye/annotations
+    // 草稿箱：仅缓冲，主存储永远是 _duiye/annotations（含锚定字段一起存）
     try {
       localStorage.setItem(KEY(id, payload.key), JSON.stringify({ ...payload, at: Date.now() }))
       ann.drafts = scanDrafts(id)
@@ -89,14 +143,18 @@ export async function flushDrafts(id: string) {
     try {
       const payload = JSON.parse(localStorage.getItem(k) || 'null')
       if (!payload) continue
-      await apiPut(`/api/annotations/${id}`, payload)
+      await apiPut(`/api/annotations/${id}`, toBody(payload))
       localStorage.removeItem(k)
-      if (payload.text) ann.items[payload.key] = { ...payload, at: new Date().toISOString() }
+      if (payload.text || payload.mark) {
+        const prev = ann.items[payload.key]
+        ann.items[payload.key] = { ...payload, at: new Date().toISOString(), n: payload.n ?? prev?.n, ac: payload.ac ?? prev?.ac }
+      }
     } catch {
       break
     }
   }
   ann.drafts = scanDrafts(id)
+  writeMirror(id)
 }
 
 /** 把批注挂回块：先精确哈希，再用 quote 兜底 */

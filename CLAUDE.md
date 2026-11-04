@@ -4,7 +4,7 @@
 
 ## 一、这是什么
 
-三栏 Markdown 精读器：左选、中读、右对照。Vite + Vue 3，纯静态，无数据库。
+精读器「我要读书」：一张纸两栏读（对开翻页 / 中英对照），目录、批注、排版收在纸右边的独立面板里。Vite + Vue 3，纯静态，无数据库。
 
 三条原则：
 
@@ -34,11 +34,22 @@ AI 的写内容流程只有一条：写 `_duiye/cache/…` → `npm run validate
 - 不提交 `dist/`、`public/data/`、`public/media/`、`node_modules/`、`_duiye/cache/*`
 - 一次提交只做一件事；内容变更用 `content:` 前缀单独提交
 
+## 三·五、部署：**默认禁止，没让我上就不许上**
+
+**这条是硬规矩：除非用户当次明确说出「上线 / 部署 / 发布 / deploy」，否则不许往任何地方发布。**
+
+- 日常改完只做一件事：`npx vite build`，让本地 `dist/` 是最新的，用户自己 `⌘⇧R` 刷新看
+- 不许自动 push 到 `gh-pages`、不许跑 rsync 到部署仓库、不许 `gh repo create`、不许开 tunnel / funnel
+- 「上次你部署过」不构成许可；每一次都要当次授权
+- 已经存在的 `wczzsmmb/duiye` 仓库（`gh-pages` 分支）是历史产物，不要再往里推
+- 部署相关动作（含改 `tools/deploy.*`、改 Pages 设置）一律先问
+
 ## 四、字标（方案已定，但目前不上）
 
 **选定方案：`src/components/Mark.vue` —— 抽象双页符号（左页实心 / 右页空心）。**
 现在**不在界面里显示**（用户看过觉得摆在顶栏不好看），但代码保留。
 不要主动加回去；要启用就在 `ShelfView.vue` / `ReaderView.vue` 里挂 `<Mark />`。
+顶栏现在用的是用户提供的应用图标 `logo.svg`（`public/logo.svg`），不是 `Mark.vue`。
 
 （备选记录：`Wordmark.vue` 是宋体字标，用户否掉了；`public/icon.svg` 仍是「对/页」叠排的应用图标。）
 
@@ -47,6 +58,17 @@ AI 的写内容流程只有一条：写 `_duiye/cache/…` → `npm run validate
 但**界面上暂时不显示字标**（用户看过，觉得摆在顶栏不好看）。请不要主动加回去；
 要恢复就改这两处：`ShelfView.vue` 的 `.brand__*`、`ReaderView.vue` 的 `.bar__*`。
 `public/icon.svg`（应用图标）继续保留。
+
+## 四·五、手机端（≤ 700px）
+
+手机上那一套是单独做的，照微信读书：
+
+- **顶栏** `.pbar`：浮在正文上，`chromeOn` 控制出没；点正文收起/唤出（选中文字、点到链接图片时不响应）
+- **底栏** `.ptools`：五个图标（目录 / 批注 / 进度 / 纸色 / 字号），选中变蓝，不带字
+- **抽屉**：`src/components/sheet/` —— `Sheet.vue`（底部圆角、把手下拉关闭、开时锁住正文滚动）+ `TocSheet` / `TypeSheet` / `ThemeSheet` / `ProgressSheet`；批注抽屉直接复用 `NotesPane`
+- 抽屉落在工具条上方（工具条一直露着），抽屉打开时顶栏收起 —— 都对着微信读书
+- 手机是**滚动阅读**，不做左右翻页；`isPhone` 只决定 chrome 走哪一套，正文两边同一份
+- 阅读时长只存本地（`src/lib/reading-time.ts`），10 秒一跳，页面不可见不计时
 
 ## 五、改代码的约束
 
@@ -66,4 +88,4 @@ npm run doctor     # 编号 / 批注 / 对齐
 npx vite build     # 必须能过
 ```
 
-改了 UI：`npm start` 打开 http://127.0.0.1:43999，看三栏、双栏、批注、手机宽度。
+改了 UI：`npm start` 打开 http://127.0.0.1:43999，看对开翻页、对照、单栏、右侧抽屉（目录 / 批注 / 排版）、夜间、手机宽度。
