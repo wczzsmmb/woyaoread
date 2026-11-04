@@ -7,8 +7,8 @@ export type Ratio = '5:5' | '4:6' | '6:4' | '3:7' | '7:3'
 export type Theme = 'light' | 'sepia' | 'green' | 'dark'
 /** 页边距 */
 export type Measure = 'narrow' | 'normal' | 'wide'
-/** 正文字体：宋体 / 文楷 / 黑体 */
-export type FontKind = 'song' | 'kai' | 'hei'
+/** 正文字体 */
+export type FontKind = 'hei' | 'song' | 'kai' | 'fangsong' | 'fzss' | 'ali'
 
 export interface Layout {
   mode: Mode
@@ -28,7 +28,7 @@ export interface Layout {
 
 const KEY = 'duiye:layout:v3'
 
-const DEFAULTS: Layout = {
+export const DEFAULTS: Layout = {
   mode: 'spread',
   ratio: '5:5',
   fontSize: 21,
@@ -52,6 +52,7 @@ function load(): Layout {
     if (!raw) return { ...DEFAULTS }
     const saved = { ...DEFAULTS, ...JSON.parse(raw) } as Layout
     saved.fontSize = Math.min(40, Math.max(18, Math.round(saved.fontSize || DEFAULTS.fontSize)))
+    if (!FONT_LABEL[saved.font]) saved.font = DEFAULTS.font
     // 只 migrate 一次：没动过字号（还是旧默认）的人升级到新默认，自己调过的不动
     if (!localStorage.getItem(`${KEY}:migrated-typo`)) {
       if (saved.fontSize === OLD_DEFAULT_FS) saved.fontSize = DEFAULTS.fontSize
@@ -104,6 +105,23 @@ export const FONT_LABEL: Record<FontKind, string> = {
   hei: '黑体',
   song: '宋体',
   kai: '文楷',
+  fangsong: '仿宋',
+  fzss: '方正书宋',
+  ali: '阿里普惠',
+}
+
+/**
+ * 每个字体选项的字族栈（先装先得）。
+ * 方正 / 阿里巴巴 / 思源这些不往仓库里塞字体文件：装了就用，没装就落到后面的兜底，
+ * 和国内阅读器的做法一致（文楷是唯一的 CDN 字体，见 index.html）。
+ */
+export const FONT_STACK: Record<FontKind, string> = {
+  hei: '"PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif',
+  song: '"Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "Noto Serif SC", "SimSun", Georgia, serif',
+  kai: '"LXGW WenKai GB", "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", serif',
+  fangsong: '"FangSong", "STFangsong", "FZFangSong-Z02S", "Songti SC", "SimSun", serif',
+  fzss: '"FZShuSong-Z01", "FZShuSong", "Songti SC", "Noto Serif CJK SC", "SimSun", serif',
+  ali: '"Alibaba PuHuiTi 3.0", "Alibaba PuHuiTi 2.0", "AlibabaPuHuiTi", "PingFang SC", "Microsoft YaHei", sans-serif',
 }
 
 /** 页边距对应的纸内边距（宽屏） */
@@ -174,6 +192,7 @@ export function applyVars() {
   r.setProperty('--page-pad', `${PAD[layout.measure] || 72}px`)
   r.setProperty('--page-pad-m', `${PAD_M[layout.measure] || 20}px`)
   r.setProperty('--indent', layout.indent ? '2em' : '0em')
+  r.setProperty('--font-body', FONT_STACK[layout.font] || FONT_STACK.hei)
   document.documentElement.dataset.theme = layout.theme
   document.documentElement.dataset.font = layout.font
   document.documentElement.dataset.indent = layout.indent ? 'on' : 'off'

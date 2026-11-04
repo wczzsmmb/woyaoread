@@ -60,17 +60,6 @@ onBeforeUnmount(() => document.documentElement.classList.remove('is-sheet-open')
           >
             <i />
           </div>
-          <div
-            class="sheet__head"
-            @touchstart.passive="onDown"
-            @touchmove.prevent="onMove"
-            @touchend="onUp"
-          >
-            <slot name="head">
-              <span class="sheet__title">{{ title }}</span>
-            </slot>
-            <button class="sheet__x" aria-label="收起" @click="emit('close')">✕</button>
-          </div>
           <div class="sheet__body" :class="{ 'is-flush': flush }">
             <slot />
           </div>

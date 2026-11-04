@@ -1351,11 +1351,6 @@ function toggleDark(e?: MouseEvent) {
   }
 }
 
-function cycleTheme() {
-  const order: ('light' | 'sepia' | 'green' | 'dark')[] = ['light', 'sepia', 'green', 'dark']
-  layout.theme = order[(order.indexOf(layout.theme) + 1) % order.length]
-}
-
 function openArticleIn(id: string) {
   // 桌面上不关面板（接着显示新篇的提纲）；手机上换篇就是去读，抽屉收起
   if (isPhone.value) panel.value = ''
@@ -1466,21 +1461,21 @@ const onKey = (e: KeyboardEvent) => {
   const t = e.target as HTMLElement
   if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable) return
   if (e.metaKey || e.ctrlKey || e.altKey) return
-  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
-    e.preventDefault()
-    turn(1)
-  } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+  const k = e.key.toLowerCase()
+  // WASD 走路：W / A 上，S / D 下（对开是翻页，单栏是滚一屏）
+  if (k === 'w' || k === 'a' || e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
     e.preventDefault()
     turn(-1)
-  } else if (e.key === 'm') {
+  } else if (k === 's' || k === 'd' || e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+    e.preventDefault()
+    turn(1)
+  } else if (k === 'm') {
     cycleMode()
-  } else if (e.key === 't') {
+  } else if (k === 't') {
     togglePanel('tree')
-  } else if (e.key === 'n') {
+  } else if (k === 'n') {
     togglePanel('notes')
-  } else if (e.key === 'd') {
-    cycleTheme()
-  } else if (e.key === 's') {
+  } else if (k === 'p') {
     togglePanel('settings')
   }
 }
@@ -1704,6 +1699,7 @@ onBeforeUnmount(() => {
                   :year="article.meta.year"
                   :keywords="article.meta.keywords || []"
                   :articles="filtered"
+                  :total="index?.articles.length || filtered.length"
                   :current-id="article.id"
                   :query="query"
                   :cats="cats"
@@ -1717,7 +1713,6 @@ onBeforeUnmount(() => {
               <NotesPane
                 v-else-if="article && panel === 'notes'"
                 :article="article"
-                :rows="visibleRows"
                 :annotations="annList"
                 :lost="resolved.lost"
                 :online="ann.online"
@@ -1729,7 +1724,6 @@ onBeforeUnmount(() => {
                 @refresh="loadAnnotations(article.id)"
                 @remove="removeNote"
                 @edit="editNote"
-                @copied="showToast('已复制全部批注')"
               />
               <SettingsPanel v-else-if="panel === 'settings'" :has-zh="Boolean(article?.hasZh)" />
             </div>
@@ -1875,7 +1869,6 @@ onBeforeUnmount(() => {
     <!-- 手机：四个底部抽屉（目录 / 批注 / 进度 / 字号 / 纸色 / 更多） -->
     <template v-if="isPhone">
       <Sheet :open="panel === 'tree'" @close="panel = ''">
-        <template #head><span class="sheet__title">目录</span></template>
         <OutlinePane
           v-if="article"
           :toc="article.toc"
@@ -1887,6 +1880,7 @@ onBeforeUnmount(() => {
           :year="article.meta.year"
           :keywords="article.meta.keywords || []"
           :articles="filtered"
+          :total="index?.articles.length || filtered.length"
           :current-id="article.id"
           :query="query"
           :cats="cats"
@@ -1899,11 +1893,9 @@ onBeforeUnmount(() => {
       </Sheet>
 
       <Sheet :open="panel === 'notes'" flush @close="panel = ''">
-        <template #head><span class="sheet__title">批注</span></template>
         <NotesPane
           v-if="article"
           :article="article"
-          :rows="visibleRows"
           :annotations="annList"
           :lost="resolved.lost"
           :online="ann.online"
@@ -1915,12 +1907,10 @@ onBeforeUnmount(() => {
           @refresh="loadAnnotations(article.id)"
           @remove="removeNote"
           @edit="editNote"
-          @copied="showToast('已复制全部批注')"
         />
       </Sheet>
 
       <Sheet :open="panel === 'progress'" @close="panel = ''">
-        <template #head><span class="sheet__title">阅读进度</span></template>
         <ProgressSheet
           :pct="pct"
           :minutes="minutes"
@@ -1933,17 +1923,14 @@ onBeforeUnmount(() => {
       </Sheet>
 
       <Sheet :open="panel === 'type'" @close="panel = ''">
-        <template #head><span class="sheet__title">字号</span></template>
         <TypeSheet :has-zh="Boolean(article?.hasZh)" />
       </Sheet>
 
       <Sheet :open="panel === 'theme'" @close="panel = ''">
-        <template #head><span class="sheet__title">纸色</span></template>
         <ThemeSheet />
       </Sheet>
 
       <Sheet :open="panel === 'more'" @close="panel = ''">
-        <template #head><span class="sheet__title">更多</span></template>
         <div class="morelist">
           <button class="morerow" @click="starFromSheet">
             <svg viewBox="0 0 24 24" :fill="starred ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">

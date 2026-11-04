@@ -19,6 +19,8 @@ const props = withDefaults(
     year?: number | null
     keywords?: string[]
     articles: ArticleMeta[]
+    /** 书架里的总篇数（分类筛选时「全部」的计数不能跟着变） */
+    total: number
     currentId: string
     query: string
     cats: CatNode[]
@@ -37,10 +39,11 @@ const emit = defineEmits<{
 const tab = ref<'toc' | 'shelf'>('toc')
 const listEl = ref<HTMLElement | null>(null)
 
-const total = computed(() => props.rows.length || 1)
+/** 注意：别叫 total —— 会把同名的 props.total（书架总篇数）遮住 */
+const rowCount = computed(() => props.rows.length || 1)
 const posOf = (h: string) => {
   const i = props.rows.findIndex((r) => r.h === h)
-  return i < 0 ? 0 : i / Math.max(1, total.value - 1)
+  return i < 0 ? 0 : i / Math.max(1, rowCount.value - 1)
 }
 const readOf = (id: string) => Math.round(progressOf(id) * 100)
 
@@ -120,7 +123,7 @@ watch(tab, async (v) => {
       <div class="pchips">
         <button class="pchip" :class="{ 'is-on': !catFilter }" @click="emit('pick-cat', '')">
           全部
-          <em>{{ articles.length }}</em>
+          <em>{{ total }}</em>
         </button>
         <button
           v-for="c in cats"
@@ -141,12 +144,13 @@ watch(tab, async (v) => {
         :class="{ 'is-on': a.id === currentId }"
         @click="emit('open', a.id)"
       >
-        <span class="prow__text">{{ a.title }}</span>
-        <span class="prow__meta">
-          <span class="otag otag--sm">{{ a.cats.at(-1) || '未分类' }}</span>
-          <span v-if="a.hasZh" class="otag otag--sm">对照</span>
-          <span class="prow__pct">{{ readOf(a.id) }}%</span>
+        <span class="prow__main">
+          <span class="prow__text">{{ a.title }}</span>
+          <span v-if="a.keywords && a.keywords.length" class="prow__kws">
+            {{ a.keywords.map((k) => '#' + k).join('  ') }}
+          </span>
         </span>
+        <span class="prow__pct">{{ readOf(a.id) }}%</span>
       </button>
       <p v-if="!articles.length" class="tsheet__empty">没有匹配的篇目。</p>
     </div>

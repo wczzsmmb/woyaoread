@@ -65,13 +65,6 @@
   --row-cols: 1fr 1fr;
 }
 
-:root[data-font="kai"] {
-  --font-body: var(--font-ref);
-}
-:root[data-font="hei"] {
-  --font-body: var(--font-ui);
-}
-
 /* 纸色：只换色，不动排版 */
 :root[data-theme="sepia"] {
   --bg: #ece4d7;
@@ -837,7 +830,8 @@ a {
 
 .page {
   --page-radius: 18px;
-  --panel-size: min(556px, calc(100vw - 40px));
+  /* 抽屉宽度＝右边那一栏 + 栏间距：正好盖住右栏、露出左栏，不会露出半行字 */
+  --panel-size: calc((100% - 2 * var(--page-pad) - var(--fold)) / 2 + var(--fold));
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1100,7 +1094,9 @@ a {
 /* 开着抽屉时，页脚让到抽屉左边，别被压掉 */
 @media (min-width: 1180px) {
   .page.is-panel .pager {
-    padding-right: calc(var(--panel-size) - var(--page-pad) + 22px);
+    /* --panel-size 里的 100% 在这里是按纸的内容盒算的（比抽屉那个盒子小两圈 padding），
+       所以不能再减 --page-pad，否则翻页按钮会缩到抽屉底下 */
+    padding-right: calc(var(--panel-size) + 22px);
   }
 }
 .panel-col {
@@ -1441,9 +1437,15 @@ a {
   color: var(--fg);
   /* 长链接、长编号不许把整页顶宽 */
   overflow-wrap: anywhere;
+  hanging-punctuation: allow-end;
 }
 .md a {
   overflow-wrap: anywhere;
+}
+.md:not(.md--latin) {
+  /* 只给中文两端对齐：西文这么排会把词距拉开成一片空洞 */
+  text-align: justify;
+  text-justify: inter-ideograph;
 }
 .md.md--latin {
   font-family: "Iowan Old Style", "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -1457,7 +1459,7 @@ a {
 .md h2,
 .md h3,
 .md h4 {
-  font-family: var(--font-doc);
+  font-family: var(--font-body);
   font-weight: 600;
   line-height: 1.45;
   margin: 1.8em 0 0.7em;
@@ -1689,8 +1691,10 @@ a {
 }
 .notes__name {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 17px;
+  font-weight: 600;
   line-height: 1.5;
+  letter-spacing: 0.01em;
   color: var(--fg);
 }
 .notes__stats {
@@ -1721,7 +1725,7 @@ a {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 15px 17px;
+  padding: 16px 18px;
 }
 .notecard__del {
   position: absolute;
@@ -1751,7 +1755,7 @@ a {
 .notecard__quote {
   display: block;
   font-family: var(--font-body);
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.9;
   color: var(--fg-2);
   border-left: 2px solid var(--hinge-line);
@@ -1760,10 +1764,10 @@ a {
 }
 .notecard__body {
   display: block;
-  margin-top: 8px;
+  margin-top: 9px;
   padding-left: 10px;
   font-family: var(--font-ref);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.8;
   color: var(--fg);
 }
@@ -2249,7 +2253,8 @@ a {
   }
   .page {
     --page-radius: 14px;
-    --panel-size: min(556px, calc(100vw - 40px));
+    /* 抽屉宽度＝右边那一栏 + 栏间距：正好盖住右栏、露出左栏，不会露出半行字 */
+  --panel-size: calc((100% - 2 * var(--page-pad) - var(--fold)) / 2 + var(--fold));
     padding: 34px var(--page-pad) 24px;
   }
   .page--spread {
@@ -2594,6 +2599,10 @@ a {
   }
 }
 
+:root[data-font="hei"] .md.md--latin,
+:root[data-font="ali"] .md.md--latin {
+  font-family: var(--font-body);
+}
 .md p {
   text-indent: var(--indent, 0);
 }
@@ -2797,7 +2806,7 @@ html.is-sheet-open {
   overflow: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 2px 14px 24px;
+  padding: 10px 14px 24px;
 }
 .sheet__body.is-flush {
   padding: 0;
@@ -2857,8 +2866,8 @@ html.is-sheet-open {
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 52px;
-  padding: 12px 4px;
+  min-height: 54px;
+  padding: 14px 4px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   font-family: var(--font-body);
@@ -2939,7 +2948,7 @@ html.is-sheet-open {
 }
 .pchip {
   flex: none;
-  padding: 6px 13px;
+  padding: 7px 14px;
   border-radius: 999px;
   background: var(--soft);
   font-size: 12.5px;
@@ -2951,24 +2960,39 @@ html.is-sheet-open {
   color: var(--blue);
 }
 .prow {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 13px 4px;
+  padding: 14px 4px;
   border-bottom: 1px solid var(--line);
   text-align: left;
+}
+.prow__main {
+  flex: 1;
+  min-width: 0;
 }
 .prow__text {
   display: block;
   font-family: var(--font-body);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.prow__meta {
+/* 关键词：最多一行，没有就不占位 */
+.prow__kws {
   display: block;
   margin-top: 3px;
-  font-size: 11.5px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.4;
   color: var(--fg-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .prow.is-on .prow__text {
   color: var(--blue);
@@ -3457,12 +3481,12 @@ html.is-sheet-open {
 }
 /* 书目：标题 + 一排胶囊（作者 / 年份 / 已读） */
 .obook {
-  padding: 12px 2px 14px;
+  padding: 14px 2px 16px;
 }
 .obook__title {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   font-family: var(--font-body);
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.5;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -3478,8 +3502,8 @@ html.is-sheet-open {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 24px;
-  padding: 0 10px;
+  height: 26px;
+  padding: 0 11px;
   border-radius: 999px;
   background: var(--soft);
   font-family: var(--font-ui);
@@ -3693,4 +3717,255 @@ html.is-sheet-open {
   .page--paged .page__body {
     padding-bottom: 34px;
   }
+}
+
+/* ------------------------------ 排版面板（照手机字号抽屉 + 分组标签） ------------------------------ */
+.settings {
+  padding: 20px 20px 26px;
+}
+/* 分组：一组一个 11px 小标签，组之间 20px，组内 10px */
+.sgroup + .sgroup {
+  margin-top: 20px;
+}
+.slabel {
+  margin: 0 2px 9px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--fg-4);
+}
+.settings .fsrow {
+  margin-bottom: 0;
+}
+.settings .pgap {
+  margin-bottom: 10px;
+}
+.settings .sgroup:last-of-type .pgap {
+  margin-bottom: 0;
+}
+.settings .pseg button {
+  min-height: 40px;
+}
+.settings .pseg--wide button {
+  min-height: 32px;
+}
+/* 纸色：一排小圆点，不占一大块 */
+.swatches--row {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+}
+.swatches--row button {
+  flex: 1;
+  padding: 10px 2px 9px;
+  gap: 7px;
+  font-size: 12px;
+}
+.swatches--row i {
+  width: 30px;
+  height: 30px;
+}
+.settings .switchlist {
+  margin-top: 2px;
+}
+.settings .switchrow {
+  min-height: 48px;
+}
+/* 快捷键一行到底，别在沉浸模式下面留一大块空白 */
+.settings .keys {
+  margin-top: 22px;
+  padding-top: 16px;
+  gap: 8px 14px;
+}
+
+/* ------------------------------ 滚动条：全部藏起来 ------------------------------ */
+/* 能滚，但不占宽度、不出现滚动条，滚动时界面不会因为滚动条进出而抖一下 */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.panel__body,
+.sheet__body,
+.pchips,
+.rail,
+.md pre,
+.composer__area {
+  scrollbar-color: transparent transparent;
+}
+
+/* ------------------------------ 字体选择：铺满一行，每个按钮用自己那套字 ------------------------------ */
+/* 六个字体 = 两行三列，刚好铺满，不会剩下一格两种的丑尾巴 */
+.pseg--fonts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  padding: 5px;
+  border-radius: 18px;
+}
+.pseg--fonts button {
+  min-height: 46px;
+  border-radius: 13px;
+  font-size: 16px;
+}
+
+
+/* ------------------------------ 排版面板：卡片式表单 ------------------------------ */
+.settings {
+  padding: 20px 20px 26px;
+}
+.sgroup + .sgroup {
+  margin-top: 22px;
+}
+.slabel {
+  margin: 0 2px 9px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--fg-4);
+}
+/* 字号：滑块放在一张浅色卡里 */
+.scard {
+  padding: 4px 10px;
+  border-radius: 16px;
+  background: var(--soft-2);
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+.settings .fsrow {
+  margin-bottom: 0;
+}
+.settings .pgap {
+  margin-bottom: 8px;
+}
+.settings .pgap:last-child {
+  margin-bottom: 0;
+}
+.settings .pseg button {
+  min-height: 40px;
+}
+/* 字体卡：两列，名字用它自己的字，下面一行小字 */
+.fontgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fontcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 62px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--page);
+  transition: border-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+.fontcard:hover {
+  border-color: var(--line-2);
+  background: var(--soft-2);
+}
+.fontcard__name {
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--fg);
+}
+.fontcard__desc {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--fg-4);
+}
+.fontcard.is-on {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+.fontcard.is-on .fontcard__name {
+  color: var(--blue);
+}
+.fontcard.is-on .fontcard__desc {
+  color: color-mix(in srgb, var(--blue) 70%, var(--fg-4));
+}
+/* 开关卡：整行可点的浅色块 */
+.switchcard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--blue) 4%, var(--page));
+  border: 1px solid color-mix(in srgb, var(--blue) 12%, var(--line));
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+.switchcard + .switchcard {
+  margin-top: 8px;
+}
+.switchcard:hover {
+  background: color-mix(in srgb, var(--blue) 7%, var(--page));
+}
+.switchcard__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.switchcard__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.switchcard__desc {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--fg-3);
+}
+/* 底部两条大按钮 */
+.sreset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 22px;
+}
+.resetbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--soft-2);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--fg-2);
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+.resetbtn svg {
+  width: 17px;
+  height: 17px;
+}
+.resetbtn:hover {
+  background: var(--soft);
+  color: var(--fg);
+}
+.resetbtn--danger {
+  background: color-mix(in srgb, #e2685f 7%, transparent);
+  border-color: color-mix(in srgb, #e2685f 24%, transparent);
+  color: #c05046;
+}
+.resetbtn--danger:hover {
+  background: color-mix(in srgb, #e2685f 12%, transparent);
+  color: #a83f36;
+}
+.settings .keys {
+  margin-top: 20px;
+  padding-top: 16px;
+  gap: 8px 14px;
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { FONT_LABEL, layout, type FontKind, type Measure, type Mode } from '../../lib/layout'
+import { FONT_LABEL, FONT_STACK, layout, type FontKind, type Measure, type Mode } from '../../lib/layout'
 
 /**
  * 字号 / 排版（照微信读书那个面板）：
@@ -85,12 +85,12 @@ void props
       </button>
     </div>
 
-    <div v-if="more === 'font'" class="pseg pseg--wide">
+    <div v-if="more === 'font'" class="pseg pseg--wide pseg--fonts">
       <button
         v-for="f in fonts"
         :key="f"
         :class="{ 'is-on': layout.font === f }"
-        :style="{ fontFamily: f === 'kai' ? 'var(--font-ref)' : f === 'hei' ? 'var(--font-ui)' : 'var(--font-doc)' }"
+        :style="{ fontFamily: FONT_STACK[f] }"
         @click="layout.font = f"
       >
         {{ FONT_LABEL[f] }}
