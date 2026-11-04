@@ -53,7 +53,7 @@ const compareOk = computed(() => props.hasZh)
       <div class="field__label">字号 <em>{{ layout.fontSize }}px</em></div>
       <div class="aaslider">
         <span>A</span>
-        <input v-model.number="layout.fontSize" class="range" type="range" min="14" max="26" step="1" />
+        <input v-model.number="layout.fontSize" class="range" type="range" min="18" max="40" step="1" />
         <span class="aaslider__max">A</span>
       </div>
     </section>
@@ -122,18 +122,28 @@ const compareOk = computed(() => props.hasZh)
     </section>
 
     <section class="field">
-      <div class="checks">
-        <label>
-          <input v-model="layout.indent" type="checkbox" />
-          <span>首行缩进两字</span>
+      <div class="switchlist">
+        <label class="switchrow">
+          <span class="switchrow__name">首行缩进</span>
+          <em class="switchrow__hint">每段开头空两字</em>
+          <input v-model="layout.indent" class="switch" type="checkbox" />
         </label>
-        <label>
-          <input v-model="layout.immersive" type="checkbox" />
-          <span>沉浸模式（隐藏顶栏，鼠标贴顶唤出）</span>
+        <label class="switchrow">
+          <span class="switchrow__name">沉浸模式</span>
+          <em class="switchrow__hint">藏起顶栏，鼠标贴顶唤出</em>
+          <input v-model="layout.immersive" class="switch" type="checkbox" />
         </label>
       </div>
     </section>
 
-    <p class="hint">← → 翻页 · M 换版式 · T 目录 · N 批注 · S 排版 · D 纸色 · Esc 关闭</p>
+    <div class="keys">
+      <span class="key"><kbd>←</kbd><kbd>→</kbd>翻页</span>
+      <span class="key"><kbd>M</kbd>版式</span>
+      <span class="key"><kbd>T</kbd>目录</span>
+      <span class="key"><kbd>N</kbd>批注</span>
+      <span class="key"><kbd>S</kbd>排版</span>
+      <span class="key"><kbd>D</kbd>纸色</span>
+      <span class="key"><kbd>Esc</kbd>收起</span>
+    </div>
   </div>
 </template>

@@ -12,7 +12,9 @@ const fonts = Object.keys(FONT_LABEL) as FontKind[]
 const lhSteps = [1.65, 1.85, 2.05]
 const more = ref<'' | 'font' | 'mode'>('')
 
-const fsPct = computed(() => ((layout.fontSize - 14) / 12) * 100)
+const FS_MIN = 18
+const FS_MAX = 40
+const fsPct = computed(() => ((layout.fontSize - FS_MIN) / (FS_MAX - FS_MIN)) * 100)
 
 const lhIndex = computed(() => {
   let best = 0
@@ -38,7 +40,7 @@ void props
     <div class="fsrow">
       <span class="fsrow__a">A</span>
       <div class="fsrow__track">
-        <input v-model.number="layout.fontSize" type="range" min="14" max="26" step="1" aria-label="字号" />
+        <input v-model.number="layout.fontSize" type="range" min="18" max="40" step="1" aria-label="字号" />
         <span class="fsrow__thumb" :style="{ left: `clamp(23px, ${fsPct}%, calc(100% - 23px))` }">
           {{ layout.fontSize }}
         </span>

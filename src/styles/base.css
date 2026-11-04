@@ -813,8 +813,8 @@ a {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  /* 顶栏和纸之间的呼吸：贴得近，但不挤 */
-  padding: 10px var(--gutter) 24px;
+  /* 顶栏和纸之间的呼吸：上面贴得近，下面多留一点，纸不再顶到窗口底 */
+  padding: 10px var(--gutter) 40px;
 }
 
 /* 对开阅读：右侧工具轨在流里，纸让开它；顶栏左侧要跟着让同样多，
@@ -1404,40 +1404,9 @@ a {
 .doc__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  font-size: 11.5px;
-  color: var(--fg-4);
+  align-items: center;
+  gap: 6px;
 }
-.doc__meta > * + *::before {
-  content: "·";
-  margin: 0 7px 0 2px;
-  color: var(--line-2);
-}
-.doc__head {
-  max-width: 70ch;
-  margin: 0 auto 30px;
-}
-.doc__head h1 {
-  font-family: var(--font-body);
-  font-size: 26px;
-  line-height: 1.4;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  margin: 0 0 10px;
-}
-.doc__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 11.5px;
-  color: var(--fg-4);
-}
-.doc__meta > * + *::before {
-  content: "·";
-  margin: 0 7px 0 2px;
-  color: var(--line-2);
-}
-
 .rows {
   max-width: 70ch;
   margin: 0 auto;
@@ -1728,9 +1697,13 @@ a {
 }
 
 .notes__head {
-  padding-bottom: 14px;
-  margin-bottom: 6px;
+  padding-bottom: 15px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--line);
+}
+.otag--warn {
+  background: color-mix(in srgb, #e2685f 14%, transparent);
+  color: #b8503f;
 }
 .notes__name {
   font-family: var(--font-body);
@@ -1738,10 +1711,8 @@ a {
   line-height: 1.5;
   color: var(--fg);
 }
-.notes__sub {
-  margin-top: 4px;
-  font-size: 11.5px;
-  color: var(--fg-4);
+.notes__stats {
+  margin-top: 9px;
 }
 .notes__chapter {
   margin: 18px 0 8px;
@@ -1840,6 +1811,7 @@ a {
   font-size: 11.5px;
   color: var(--fg-4);
   letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 .notes__copy {
   padding: 9px 14px;
@@ -2505,12 +2477,11 @@ a {
     margin: 1.5em 0 0.6em;
   }
   .doc__meta {
+    gap: 6px;
+  }
+  .doc__meta .otag {
+    height: 22px;
     font-size: 11px;
-    gap: 8px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
   }
   .bar__name {
     font-size: 13.5px;
@@ -3485,5 +3456,252 @@ html.is-sheet-open {
   }
   .row {
     break-inside: avoid;
+  }
+}
+
+/* ------------------------------ 目录 / 我的书架（桌面面板 + 手机抽屉共用） ------------------------------ */
+.panel__pad {
+  padding: 2px 16px 30px;
+}
+.opane {
+  --olabel-w: 0px;
+}
+/* 书目：标题 + 一排胶囊（作者 / 年份 / 已读） */
+.obook {
+  padding: 12px 2px 14px;
+}
+.obook__title {
+  margin: 0 0 10px;
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+}
+.otags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.otag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--soft);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  line-height: 1;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+.otag--wide {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.otag--blue {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+.otag--kw {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--fg-3);
+}
+.otag--sm {
+  height: 20px;
+  padding: 0 8px;
+  font-size: 10.5px;
+}
+.olabel {
+  margin: 18px 0 8px;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--fg-4);
+}
+.okws {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+/* 书架列表：标题一行，第二行是分类/对照/已读胶囊，右边进度百分比 */
+.prow__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.prow__pct {
+  margin-left: auto;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  color: var(--fg-4);
+  font-variant-numeric: tabular-nums;
+}
+.prow.is-on .prow__pct {
+  color: var(--blue);
+}
+.pchip em {
+  margin-left: 5px;
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--fg-4);
+  font-variant-numeric: tabular-nums;
+}
+.pchip.is-on em {
+  color: var(--blue);
+}
+/* 面板里的 tab 条：贴着面板两边，不撑出滚动条 */
+.panel__pad .tseg {
+  margin: 0 0 10px;
+}
+
+/* ------------------------------ 设置面板：开关行 + 快捷键 ------------------------------ */
+.switchlist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.switchrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 2px;
+  cursor: pointer;
+}
+.switchrow + .switchrow {
+  border-top: 1px solid var(--line);
+}
+.switchrow__name {
+  font-size: 13.5px;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.switchrow__hint {
+  flex: 1;
+  min-width: 0;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--fg-4);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* iOS 那种小开关，纯 CSS */
+.switch {
+  flex: none;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 42px;
+  height: 25px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--soft-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-2) 70%, transparent);
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+.switch::after {
+  content: "";
+  display: block;
+  width: 21px;
+  height: 21px;
+  margin: 2px;
+  border-radius: 50%;
+  background: var(--page);
+  box-shadow: 0 1px 3px rgba(20, 23, 28, 0.24);
+  transition: transform 0.18s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.switch:checked {
+  background: var(--blue);
+  box-shadow: inset 0 0 0 1px transparent;
+}
+.switch:checked::after {
+  transform: translateX(17px);
+}
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--fg-4);
+}
+.key kbd {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 5px;
+  border: 1px solid var(--line-2);
+  background: var(--soft-2);
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  color: var(--fg-3);
+}
+
+/* ------------------------------ 深浅切换：从点击处圆着铺开 ------------------------------ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+/* ------------------------------ 手机：一栏一页（点击左右翻） ------------------------------ */
+@media (max-width: 700px) {
+  .page--paged {
+    /* 纸就是屏幕：高度锁死，正文在里面横向分页 */
+    height: 100dvh;
+    max-height: 100dvh;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+  .page--paged .page__body {
+    overflow: hidden;
+    height: 100%;
+  }
+  .page--paged .rows {
+    columns: 1;
+    column-gap: 0;
+    column-fill: auto;
+    height: 100%;
+    max-width: none;
+    margin: 0;
+    transition: transform 0.26s cubic-bezier(0.22, 0.7, 0.3, 1);
+  }
+  /* 翻页时别让底下的长表/代码越过一页高 */
+  .page--paged .row--table,
+  .page--paged .row--code,
+  .page--paged .row--math {
+    break-inside: auto;
+  }
+  /* 底部工具条悬在纸上；正文多留一点，最后一行不至于被盖住 */
+  .page--paged .page__body {
+    padding-bottom: 34px;
   }
 }

@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import DocRows from '../components/DocRows.vue'
-import TreePane from '../components/TreePane.vue'
+import OutlinePane from '../components/OutlinePane.vue'
 import NotesPane from '../components/NotesPane.vue'
 import SettingsPanel from '../components/SettingsPanel.vue'
 import NoteEditor from '../components/NoteEditor.vue'
 import Sheet from '../components/sheet/Sheet.vue'
-import TocSheet from '../components/sheet/TocSheet.vue'
 import TypeSheet from '../components/sheet/TypeSheet.vue'
 import ThemeSheet from '../components/sheet/ThemeSheet.vue'
 import ProgressSheet from '../components/sheet/ProgressSheet.vue'
@@ -102,6 +101,10 @@ const mode = computed<Mode>(() => {
 })
 const spread = computed(() => mode.value === 'spread')
 const paired = computed(() => mode.value === 'compare')
+/** 按页翻：对开是两栏一页，手机是一栏一页（都是同一套 translateX） */
+const paged = computed(() => spread.value || isPhone.value)
+/** 一页里几栏 */
+const perPage = computed(() => (spread.value ? 2 : 1))
 
 const filtered = computed(() => {
   const all = index.value?.articles || []
@@ -177,7 +180,8 @@ function applyShift(p: number) {
 
 function colOf(row: HTMLElement, el: HTMLElement) {
   const gap = gapOf(el)
-  const colW = Math.max(1, (el.clientWidth - gap) / 2)
+  const per = perPage.value
+  const colW = Math.max(1, (el.clientWidth - gap * (per - 1)) / per)
   const dx = row.getBoundingClientRect().left - el.getBoundingClientRect().left
   return Math.round(dx / (colW + gap))
 }
@@ -191,7 +195,7 @@ function measure() {
     const right = Math.max(0, window.innerWidth - pageEl.getBoundingClientRect().right)
     pageEl.style.setProperty('--page-right', `${right}px`)
   }
-  if (!spread.value) {
+  if (!paged.value) {
     pages.value = 1
     page.value = 0
     el.style.transform = ''
@@ -204,7 +208,7 @@ function measure() {
   })
   const gap = gapOf(el)
   const cols = Math.max(1, Math.round((el.scrollWidth + gap) / (el.clientWidth + gap)))
-  const total = Math.max(1, Math.ceil(cols / 2))
+  const total = Math.max(1, Math.ceil(cols / perPage.value))
   pages.value = total
   page.value = Math.min(page.value, total - 1)
   applyShift(page.value)
@@ -222,18 +226,18 @@ function headingAtPage(p: number) {
   if (!el) return ''
   let best = ''
   el.querySelectorAll<HTMLElement>('.row--heading').forEach((r) => {
-    if (Math.floor(colOf(r, el) / 2) <= p) best = r.dataset.bh || best
+    if (Math.floor(colOf(r, el) / perPage.value) <= p) best = r.dataset.bh || best
   })
   return best
 }
 
 function syncPct() {
-  if (spread.value) pct.value = pages.value > 1 ? (page.value + 1) / pages.value : 1
+  if (paged.value) pct.value = pages.value > 1 ? (page.value + 1) / pages.value : 1
   if (article.value) setProgress(article.value.id, pct.value)
 }
 
 function turn(d: number) {
-  if (!spread.value) {
+  if (!paged.value) {
     window.scrollBy({ top: d * window.innerHeight * 0.82, behavior: 'smooth' })
     return
   }
@@ -256,11 +260,11 @@ function turnTo(p: number) {
 
 function jump(h: string) {
   if (isPhone.value && panel.value === 'tree') panel.value = ''
-  if (spread.value) {
+  if (paged.value) {
     const el = rowsEl()
     const row = document.getElementById(`b-${h}`)
     if (el && row) {
-      turnTo(Math.floor(colOf(row, el) / 2))
+      turnTo(Math.floor(colOf(row, el) / perPage.value))
       activeH.value = h
       return
     }
@@ -343,7 +347,7 @@ function bindImages() {
 
 /** 排版重算之后，把进度找回来（saved 由调用方在 measure() 之前先记下） */
 function restoreProgress(saved = progressOf(props.id)) {
-  if (spread.value) {
+  if (paged.value) {
     if (pages.value > 1 && saved > 0) turnTo(Math.round(saved * pages.value) - 1)
     else syncPct()
     return
@@ -1230,8 +1234,14 @@ function togglePanel(p: Panel) {
 function onStageTap(e: MouseEvent) {
   if (!isPhone.value || panel.value || editor.open) return
   const t = e.target as HTMLElement
-  if (t.closest('a, img, button, .pen, .hl, .note-sup')) return
+  if (t.closest('a, img, button, .pen, .selbar')) return
   if (window.getSelection()?.toString().trim()) return
+  const w = window.innerWidth
+  // 左右两头点一下翻一页（跟微信读书一样），中间点一下收 / 放上下栏
+  if (paged.value) {
+    if (e.clientX <= w * 0.3) return turn(-1)
+    if (e.clientX >= w * 0.7) return turn(1)
+  }
   if (chromeOn.value) {
     chromeOn.value = false
     clearTimeout(idleTimer)
@@ -1243,7 +1253,7 @@ function onStageTap(e: MouseEvent) {
 /** 进度条拖到哪儿就读到哪儿 */
 function seek(p: number) {
   const v = Math.max(0, Math.min(1, p))
-  if (spread.value) {
+  if (paged.value) {
     turnTo(Math.round(v * pages.value) - 1)
     return
   }
@@ -1254,7 +1264,7 @@ function seek(p: number) {
 }
 
 function toTop() {
-  if (spread.value) return turnTo(0)
+  if (paged.value) return turnTo(0)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -1308,6 +1318,39 @@ function cycleMode() {
   layout.mode = MODES[(MODES.indexOf(layout.mode) + 1) % MODES.length]
 }
 
+const isDark = computed(() => layout.theme === 'dark')
+
+/**
+ * 深色 / 浅色一键切：用 View Transitions 从点击的那个点圆着铺满全屏。
+ * 不支持 startViewTransition 的浏览器直接切，不挡路。
+ */
+function toggleDark(e?: MouseEvent) {
+  const next = isDark.value ? 'light' : 'dark'
+  const x = e?.clientX ?? window.innerWidth / 2
+  const y = e?.clientY ?? window.innerHeight / 2
+  const doc = document as any
+  const apply = () => (layout.theme = next)
+  if (typeof doc.startViewTransition !== 'function') return apply()
+  const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
+  try {
+    const vt = doc.startViewTransition(apply)
+    vt.ready
+      .then(() => {
+        document.documentElement.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+          {
+            duration: 520,
+            easing: 'cubic-bezier(.35,.12,.2,1)',
+            pseudoElement: '::view-transition-new(root)',
+          },
+        )
+      })
+      .catch(() => {})
+  } catch {
+    apply()
+  }
+}
+
 function cycleTheme() {
   const order: ('light' | 'sepia' | 'green' | 'dark')[] = ['light', 'sepia', 'green', 'dark']
   layout.theme = order[(order.indexOf(layout.theme) + 1) % order.length]
@@ -1352,7 +1395,7 @@ function followScroll() {
 
 const onScroll = () => {
   followScroll()
-  if (spread.value) return
+  if (paged.value) return
   const h = document.documentElement.scrollHeight - window.innerHeight
   pct.value = h > 0 ? Math.min(1, window.scrollY / h) : 0
   if (article.value) setProgress(article.value.id, pct.value)
@@ -1376,7 +1419,7 @@ const onPageClick = (e: MouseEvent) => {
 
 function setupTocObserver() {
   tocIO?.disconnect()
-  if (spread.value) return
+  if (paged.value) return
   tocIO = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {
@@ -1473,7 +1516,7 @@ watch(panel, (v) => {
   }
 })
 
-watch(spread, () =>
+watch([spread, isPhone], () =>
   nextTick(() => {
     scheduleMeasure()
     setupTocObserver()
@@ -1605,21 +1648,25 @@ onBeforeUnmount(() => {
     <!-- 阅读面和面板是并排的两个表面：面板从不压在正文上，纸也不被蒙层盖住 -->
     <div class="bench">
       <main class="stage" @click="onStageTap">
-      <article class="page" :class="{ 'page--spread': spread, 'page--narrow-pad': narrow, 'is-panel': panel }">
+      <article
+        class="page"
+        :class="{ 'page--spread': spread, 'page--paged': paged && !spread, 'page--narrow-pad': narrow, 'is-panel': panel }"
+      >
         <div ref="pageBody" class="page__body" :style="{ '--row-cols': rowCols }" @click="onPageClick">
           <p v-if="loading" class="state">载入中…</p>
           <p v-else-if="error" class="state">
             读不到这篇：{{ error }}<br />先 <code>npm run build</code>。
           </p>
           <template v-else-if="article">
-            <div v-if="!spread" class="doc__head">
+            <div v-if="!spread && !isPhone" class="doc__head">
               <h1>{{ article.title }}</h1>
               <div class="doc__meta">
-                <span v-if="article.meta.author">{{ article.meta.author }}</span>
-                <span v-if="article.meta.year">{{ article.meta.year }}</span>
-                <span>{{ article.blocks }} 块</span>
-                <span>{{ Math.round(article.chars / 1000) }} 千字</span>
-                <span v-if="article.hasZh">对照 {{ Math.round(article.alignRatio * 100) }}%</span>
+                <span v-if="article.meta.author" class="otag otag--wide">{{ article.meta.author }}</span>
+                <span v-if="article.meta.year" class="otag">{{ article.meta.year }}</span>
+                <span class="otag otag--blue">已读 {{ Math.round(pct * 100) }}%</span>
+                <span class="otag">{{ article.blocks }} 块</span>
+                <span class="otag">{{ Math.round(article.chars / 1000) }} 千字</span>
+                <span v-if="article.hasZh" class="otag">对照 {{ Math.round(article.alignRatio * 100) }}%</span>
               </div>
             </div>
             <DocRows :rows="visibleRows" :paired="paired" :can-annotate="true" :script="article.script" @edit="openEditor" />
@@ -1650,39 +1697,27 @@ onBeforeUnmount(() => {
               <button class="panel__close" aria-label="关闭面板" @click="panel = ''">✕</button>
             </header>
             <div class="panel__body">
-              <template v-if="article && panel === 'tree'">
-                <TreePane
-                  :cats="cats"
-                  :active="catFilter"
-                  :query="query"
+              <div v-if="article && panel === 'tree'" class="panel__pad">
+                <OutlinePane
                   :toc="article.toc"
+                  :rows="visibleRows"
                   :active-h="activeH"
-                  :keywords="article.meta.keywords || []"
+                  :pct="pct"
                   :title="article.title"
                   :author="article.meta.author"
                   :year="article.meta.year"
-                  :pct="pct"
-                  @pick="catFilter = $event"
-                  @update:query="query = $event"
+                  :keywords="article.meta.keywords || []"
+                  :articles="filtered"
+                  :current-id="article.id"
+                  :query="query"
+                  :cats="cats"
+                  :cat-filter="catFilter"
                   @jump="jump"
+                  @open="openArticleIn"
+                  @update:query="query = $event"
+                  @pick-cat="catFilter = $event"
                 />
-                <div class="tree-pane__list">
-                  <button
-                    v-for="a in filtered"
-                    :key="a.id"
-                    class="item item--sm"
-                    :class="{ 'is-on': a.id === article.id }"
-                    @click="openArticleIn(a.id)"
-                  >
-                    <span class="item__title">{{ a.title }}</span>
-                    <span class="item__meta">
-                      <span class="tag">{{ a.cats.at(-1) || '未分类' }}</span>
-                      <span v-if="a.hasZh">{{ Math.round(a.alignRatio * 100) }}%</span>
-                    </span>
-                  </button>
-                  <p v-if="!filtered.length" class="muted pad">没有匹配的篇目。</p>
-                </div>
-              </template>
+              </div>
               <NotesPane
                 v-else-if="article && panel === 'notes'"
                 :article="article"
@@ -1744,6 +1779,16 @@ onBeforeUnmount(() => {
         >
           <span class="dock__aa">Aa</span>
           <span>排版</span>
+        </button>
+        <button class="dock__item" :title="isDark ? '切到浅色（D）' : '切到深色（D）'" aria-label="切换深浅" @click="toggleDark">
+          <svg v-if="isDark" class="dock__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4.1" />
+            <path d="M12 3.4v2.1M12 18.5v2.1M3.4 12h2.1M18.5 12h2.1M6 6l1.5 1.5M16.5 16.5 18 18M18 6l-1.5 1.5M7.5 16.5 6 18" />
+          </svg>
+          <svg v-else class="dock__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 14.4A8.2 8.2 0 0 1 9.6 4a8.4 8.4 0 1 0 10.4 10.4z" />
+          </svg>
+          <span>深浅</span>
         </button>
       </nav>
 
@@ -1834,8 +1879,8 @@ onBeforeUnmount(() => {
     <!-- 手机：四个底部抽屉（目录 / 批注 / 进度 / 字号 / 纸色 / 更多） -->
     <template v-if="isPhone">
       <Sheet :open="panel === 'tree'" @close="panel = ''">
-        <template #head><span class="sheet__title">{{ article?.title || '目录' }}</span></template>
-        <TocSheet
+        <template #head><span class="sheet__title">目录</span></template>
+        <OutlinePane
           v-if="article"
           :toc="article.toc"
           :rows="visibleRows"
@@ -1844,6 +1889,7 @@ onBeforeUnmount(() => {
           :title="article.title"
           :author="article.meta.author"
           :year="article.meta.year"
+          :keywords="article.meta.keywords || []"
           :articles="filtered"
           :current-id="article.id"
           :query="query"
@@ -1915,6 +1961,16 @@ onBeforeUnmount(() => {
               <rect x="13.2" y="5" width="7.2" height="14" rx="1.6" />
             </svg>
             <span>{{ paired ? '只看原文' : '中英对照' }}</span>
+          </button>
+          <button class="morerow" @click="toggleDark">
+            <svg v-if="isDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 3.4v2.1M12 18.5v2.1M3.4 12h2.1M18.5 12h2.1M6 6l1.5 1.5M16.5 16.5 18 18M18 6l-1.5 1.5M7.5 16.5 6 18" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 14.4A8.2 8.2 0 0 1 9.6 4a8.4 8.4 0 1 0 10.4 10.4z" />
+            </svg>
+            <span>{{ isDark ? '切到浅色' : '切到深色' }}</span>
           </button>
           <button class="morerow" @click="copyLink">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">

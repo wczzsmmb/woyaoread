@@ -35,7 +35,7 @@ const DEFAULTS: Layout = {
   lineHeight: 1.9,
   theme: 'light',
   measure: 'normal',
-  font: 'song',
+  font: 'hei',
   indent: false,
   immersive: false,
   drawerWidth: 300,
@@ -51,10 +51,13 @@ function load(): Layout {
     const raw = localStorage.getItem(KEY) || localStorage.getItem('duiye:layout:v2')
     if (!raw) return { ...DEFAULTS }
     const saved = { ...DEFAULTS, ...JSON.parse(raw) } as Layout
+    saved.fontSize = Math.min(40, Math.max(18, Math.round(saved.fontSize || DEFAULTS.fontSize)))
     // 只 migrate 一次：没动过字号（还是旧默认）的人升级到新默认，自己调过的不动
     if (!localStorage.getItem(`${KEY}:migrated-typo`)) {
       if (saved.fontSize === OLD_DEFAULT_FS) saved.fontSize = DEFAULTS.fontSize
       if (saved.lineHeight === OLD_DEFAULT_LH) saved.lineHeight = DEFAULTS.lineHeight
+      // 老默认是宋体，新默认黑体；没自己换过字体的人跟着走一次
+      if (saved.font === 'song') saved.font = DEFAULTS.font
       try {
         localStorage.setItem(`${KEY}:migrated-typo`, '1')
       } catch {
@@ -96,10 +99,11 @@ export const MEASURE_LABEL: Record<Measure, string> = {
   wide: '宽',
 }
 
+/** 顺序就是面板上的顺序：黑体排第一，也是默认字体 */
 export const FONT_LABEL: Record<FontKind, string> = {
+  hei: '黑体',
   song: '宋体',
   kai: '文楷',
-  hei: '黑体',
 }
 
 /** 页边距对应的纸内边距（宽屏） */

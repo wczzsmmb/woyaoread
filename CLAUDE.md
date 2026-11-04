@@ -65,9 +65,10 @@ AI 的写内容流程只有一条：写 `_duiye/cache/…` → `npm run validate
 
 - **顶栏** `.pbar`：浮在正文上，`chromeOn` 控制出没；点正文收起/唤出（选中文字、点到链接图片时不响应）
 - **底栏** `.ptools`：五个图标（目录 / 批注 / 进度 / 纸色 / 字号），选中变蓝，不带字
-- **抽屉**：`src/components/sheet/` —— `Sheet.vue`（底部圆角、把手下拉关闭、开时锁住正文滚动）+ `TocSheet` / `TypeSheet` / `ThemeSheet` / `ProgressSheet`；批注抽屉直接复用 `NotesPane`
+- **抽屉**：`src/components/sheet/` —— `Sheet.vue`（底部圆角、把手下拉关闭、开时锁住正文滚动）+ `OutlinePane`（目录 / 我的书架）/ `TypeSheet` / `ThemeSheet` / `ProgressSheet`；批注抽屉直接复用 `NotesPane`
 - 抽屉落在工具条上方（工具条一直露着），抽屉打开时顶栏收起 —— 都对着微信读书
-- 手机是**滚动阅读**，不做左右翻页；`isPhone` 只决定 chrome 走哪一套，正文两边同一份
+- 手机是**一栏一页**：`.page--paged` 把 `.rows` 改成 `columns: 1` + 固定页高，用和桌面同一套 `translateX` 翻页；点左边 30% 上一页、右边 30% 下一页、中间收/放上下栏
+- `paged = spread || isPhone`；`perPage = spread ? 2 : 1`，所有分页算法（measure / colOf / headingAtPage / turn）都读这两个值
 - 阅读时长只存本地（`src/lib/reading-time.ts`），10 秒一跳，页面不可见不计时
 
 ## 五、改代码的约束

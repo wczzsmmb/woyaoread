@@ -88,8 +88,11 @@ async function copyAll() {
   <div class="pane notes">
     <div class="notes__head">
       <div class="notes__name">{{ article.title }}</div>
-      <div class="notes__sub">
-        已读到 {{ Math.round(pct * 100) }}% · {{ annotations.length }} 条想法<template v-if="marks"> · {{ marks }} 条划线</template><template v-if="lost.length"> · {{ lost.length }} 条待重新定位</template>
+      <div class="otags notes__stats">
+        <span class="otag otag--blue">已读 {{ Math.round(pct * 100) }}%</span>
+        <span class="otag">{{ annotations.length }} 条想法</span>
+        <span v-if="marks" class="otag">{{ marks }} 条划线</span>
+        <span v-if="lost.length" class="otag otag--warn">{{ lost.length }} 条待定位</span>
       </div>
     </div>
 
@@ -132,8 +135,8 @@ async function copyAll() {
     </div>
 
     <div v-if="annotations.length" class="notes__foot">
-      <span class="notes__sum">共 {{ words }} 字笔记</span>
-      <button class="notes__copy" @click="copyAll">复制全部笔记 · {{ annotations.length }}</button>
+      <span class="notes__sum">{{ annotations.length }} 条 · {{ words }} 字</span>
+      <button class="notes__copy" @click="copyAll">复制全部笔记</button>
     </div>
   </div>
 </template>

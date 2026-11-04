@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
-import type { ArticleMeta, CatNode } from '../../lib/types'
+import { computed, nextTick, ref, watch } from 'vue'
+import { progressOf } from '../lib/progress'
+import type { ArticleMeta, CatNode } from '../lib/types'
 
 /**
- * 手机端的目录抽屉：两页——本篇目录 / 换一篇。
- * 目录里当前小节标蓝并写「当前读到」，右边给个大概百分比（手机是滚动阅读，没有页码）。
+ * 目录 / 我的书架（桌面面板和手机抽屉共用一套）。
+ * 两页：目录（本篇提纲 + 关键词）· 我的书架（搜索 + 分类 + 全部篇目）。
+ * 桌面从 .panel 里打开、手机从底部抽屉里打开，所以这层只管排版，不加外边距。
  */
 const props = withDefaults(
   defineProps<{
@@ -15,13 +17,14 @@ const props = withDefaults(
     title: string
     author?: string
     year?: number | null
+    keywords?: string[]
     articles: ArticleMeta[]
     currentId: string
     query: string
     cats: CatNode[]
     catFilter: string
   }>(),
-  { author: '', year: null },
+  { author: '', year: null, keywords: () => [] },
 )
 
 const emit = defineEmits<{
@@ -31,7 +34,7 @@ const emit = defineEmits<{
   (e: 'pick-cat', name: string): void
 }>()
 
-const tab = ref<'toc' | 'list'>('toc')
+const tab = ref<'toc' | 'shelf'>('toc')
 const listEl = ref<HTMLElement | null>(null)
 
 const total = computed(() => props.rows.length || 1)
@@ -39,29 +42,38 @@ const posOf = (h: string) => {
   const i = props.rows.findIndex((r) => r.h === h)
   return i < 0 ? 0 : i / Math.max(1, total.value - 1)
 }
+const readOf = (id: string) => Math.round(progressOf(id) * 100)
 
-onMounted(async () => {
+watch(tab, async (v) => {
+  if (v !== 'toc') return
   await nextTick()
   listEl.value?.querySelector('.trow.is-on')?.scrollIntoView({ block: 'center' })
 })
 </script>
 
 <template>
-  <div class="tsheet">
-    <div class="tseg">
-      <button :class="{ 'is-on': tab === 'toc' }" @click="tab = 'toc'">目录</button>
-      <button :class="{ 'is-on': tab === 'list' }" @click="tab = 'list'">换一篇</button>
+  <div class="opane">
+    <!-- 书目：标题 + 一排胶囊（作者 / 年份 / 已读） -->
+    <header class="obook">
+      <h2 class="obook__title">{{ title }}</h2>
+      <div class="otags">
+        <span v-if="author" class="otag otag--wide">{{ author }}</span>
+        <span v-if="year" class="otag">{{ year }}</span>
+        <span class="otag otag--blue">已读 {{ Math.round(pct * 100) }}%</span>
+      </div>
+    </header>
+
+    <div class="tseg" role="tablist">
+      <button role="tab" :aria-selected="tab === 'toc'" :class="{ 'is-on': tab === 'toc' }" @click="tab = 'toc'">
+        目录
+      </button>
+      <button role="tab" :aria-selected="tab === 'shelf'" :class="{ 'is-on': tab === 'shelf' }" @click="tab = 'shelf'">
+        我的书架
+      </button>
     </div>
 
+    <!-- 目录 -->
     <div v-if="tab === 'toc'" ref="listEl" class="tlist">
-      <div class="tbook">
-        <div class="tbook__meta">
-          <template v-if="author">{{ author }} · </template>
-          <template v-if="year">{{ year }} · </template>
-          本篇 {{ toc.length }} 节 · 已读 {{ Math.round(pct * 100) }}%
-        </div>
-      </div>
-
       <button
         v-for="t in toc"
         :key="t.h"
@@ -80,8 +92,16 @@ onMounted(async () => {
       </button>
 
       <p v-if="!toc.length" class="tsheet__empty">这一篇还没有分节标题。</p>
+
+      <div v-if="keywords.length" class="okws">
+        <div class="olabel">关键词</div>
+        <div class="otags">
+          <span v-for="k in keywords" :key="k" class="otag otag--kw">#{{ k }}</span>
+        </div>
+      </div>
     </div>
 
+    <!-- 我的书架 -->
     <div v-else class="tlist">
       <label class="psearch">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
@@ -98,7 +118,10 @@ onMounted(async () => {
       </label>
 
       <div class="pchips">
-        <button class="pchip" :class="{ 'is-on': !catFilter }" @click="emit('pick-cat', '')">全部</button>
+        <button class="pchip" :class="{ 'is-on': !catFilter }" @click="emit('pick-cat', '')">
+          全部
+          <em>{{ articles.length }}</em>
+        </button>
         <button
           v-for="c in cats"
           :key="c.path.join('/')"
@@ -107,6 +130,7 @@ onMounted(async () => {
           @click="emit('pick-cat', c.name)"
         >
           {{ c.name }}
+          <em>{{ c.ids.length }}</em>
         </button>
       </div>
 
@@ -119,8 +143,9 @@ onMounted(async () => {
       >
         <span class="prow__text">{{ a.title }}</span>
         <span class="prow__meta">
-          {{ a.cats.at(-1) || '未分类' }}
-          <template v-if="a.hasZh"> · 对照</template>
+          <span class="otag otag--sm">{{ a.cats.at(-1) || '未分类' }}</span>
+          <span v-if="a.hasZh" class="otag otag--sm">对照</span>
+          <span class="prow__pct">{{ readOf(a.id) }}%</span>
         </span>
       </button>
       <p v-if="!articles.length" class="tsheet__empty">没有匹配的篇目。</p>
