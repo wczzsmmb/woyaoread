@@ -100,14 +100,14 @@ export const MEASURE_LABEL: Record<Measure, string> = {
   wide: '宽',
 }
 
-/** 顺序就是面板上的顺序：黑体排第一，也是默认字体 */
+/** 顺序就是面板上的顺序：黑体排第一，也是默认字体。名字一律写全称，不用简称 */
 export const FONT_LABEL: Record<FontKind, string> = {
   hei: '黑体',
   song: '宋体',
-  kai: '文楷',
+  kai: '霞鹜文楷',
   fangsong: '仿宋',
-  fzss: '方正书宋',
-  ali: '阿里普惠',
+  fzss: '方正书宋简体',
+  ali: '阿里巴巴普惠体',
 }
 
 /**
@@ -120,8 +120,8 @@ export const FONT_STACK: Record<FontKind, string> = {
   song: '"Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "Noto Serif SC", "SimSun", Georgia, serif',
   kai: '"LXGW WenKai GB", "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", serif',
   fangsong: '"FangSong", "STFangsong", "FZFangSong-Z02S", "Songti SC", "SimSun", serif',
-  fzss: '"FZShuSong-Z01", "FZShuSong", "Songti SC", "Noto Serif CJK SC", "SimSun", serif',
-  ali: '"Alibaba PuHuiTi 3.0", "Alibaba PuHuiTi 2.0", "AlibabaPuHuiTi", "PingFang SC", "Microsoft YaHei", sans-serif',
+  fzss: '"FZShuSong-Z01", "FZShuSong", "方正书宋简体", "FZShuSong-Z01S", "Songti SC", "Noto Serif CJK SC", "SimSun", serif',
+  ali: '"Alibaba PuHuiTi 3.0", "Alibaba PuHuiTi 2.0", "阿里巴巴普惠体", "AlibabaPuHuiTi", "PingFang SC", "Microsoft YaHei", sans-serif',
 }
 
 /** 页边距对应的纸内边距（宽屏） */
