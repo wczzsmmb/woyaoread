@@ -1104,12 +1104,14 @@ a {
   }
 }
 .panel-col {
+  /* 默认（单栏 / 对照：纸比屏幕高，会滚动）贴在视口上，但右边对齐纸边 */
   position: fixed;
-  top: calc(var(--bar-total) + 14px);
+  top: calc(var(--bar-total) + 12px);
   right: var(--page-right, 16px);
-  bottom: 24px;
+  bottom: 32px;
   z-index: 4;
   width: var(--panel-size);
+  max-width: 100%;
   background: var(--page);
   border: 1px solid var(--line);
   border-right: 0;
@@ -1120,6 +1122,13 @@ a {
   visibility: hidden;
   transform: translateX(18px);
   transition: opacity 0.18s ease, transform 0.24s cubic-bezier(0.22, 0.7, 0.3, 1), visibility 0s 0.24s;
+}
+.reader.is-spread .panel-col {
+  /* 对开：纸正好一屏高，抽屉就是纸里面的一个容器，上下右都贴着纸边 */
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
 }
 .panel-col.is-open {
   opacity: 1;
@@ -1132,33 +1141,6 @@ a {
   flex-direction: column;
   width: 100%;
   height: 100%;
-}
-.panel__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex: none;
-  padding: 16px 14px 6px 20px;
-}
-.panel__title {
-  font-size: 11.5px;
-  letter-spacing: 0.14em;
-  color: var(--fg-3);
-}
-.panel__close {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  color: var(--fg-4);
-  font-size: 11px;
-  transition: background 0.14s ease, color 0.14s ease;
-}
-.panel__close:hover {
-  background: var(--soft);
-  color: var(--fg);
 }
 .panel__body {
   flex: 1;
@@ -1666,7 +1648,7 @@ a {
 
 .pane {
   position: relative;
-  padding: 2px 18px 36px;
+  padding: 18px 18px 36px;
   font-family: var(--font-ui);
   font-size: 13px;
 }
@@ -1910,7 +1892,7 @@ a {
 
 /* 排版面板（在右侧面板列里，不再是浮卡） */
 .settings {
-  padding: 2px 18px 22px;
+  padding: 18px 18px 24px;
   font-family: var(--font-ui);
 }
 .field {
@@ -2374,7 +2356,14 @@ a {
     transform: translateY(calc(100% + 90px));
     transition: transform 0.26s cubic-bezier(0.22, 0.7, 0.3, 1), visibility 0s 0.26s;
   }
-  .panel-col.is-open {
+  .reader.is-spread .panel-col {
+  /* 对开：纸正好一屏高，抽屉就是纸里面的一个容器，上下右都贴着纸边 */
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+.panel-col.is-open {
     pointer-events: auto;
     transform: none;
     transition: transform 0.26s cubic-bezier(0.22, 0.7, 0.3, 1);
@@ -3461,7 +3450,7 @@ html.is-sheet-open {
 
 /* ------------------------------ 目录 / 我的书架（桌面面板 + 手机抽屉共用） ------------------------------ */
 .panel__pad {
-  padding: 2px 16px 30px;
+  padding: 18px 16px 30px;
 }
 .opane {
   --olabel-w: 0px;

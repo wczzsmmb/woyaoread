@@ -1692,10 +1692,6 @@ onBeforeUnmount(() => {
         </footer>
         <aside v-if="!isPhone" class="panel-col" :class="{ 'is-open': panel }" :inert="!panel">
           <section class="panel" role="dialog" :aria-label="panelTitle || '面板'">
-            <header class="panel__top">
-              <span class="panel__title">{{ panelTitle }}</span>
-              <button class="panel__close" aria-label="关闭面板" @click="panel = ''">✕</button>
-            </header>
             <div class="panel__body">
               <div v-if="article && panel === 'tree'" class="panel__pad">
                 <OutlinePane
