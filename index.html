@@ -9,10 +9,10 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <!-- 对照栏与批注用霞鹜文楷（CDN，按 unicode-range 分片按需加载）；失败自动回落到宋体 -->
+    <!-- 对照栏与批注用霞鹜文楷（本地分片，按 unicode-range 按需加载，无外部请求）；失败自动回落到宋体 -->
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/style.css"
+      href="./fonts/wenkai/result.css"
       media="print"
       onload="this.media='all'"
     />
