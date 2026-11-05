@@ -41,7 +41,8 @@ AI 的写内容流程只有一条：写 `_woyaoread/cache/…` → `npm run vali
 - 日常改完只做一件事：`npx vite build`，让本地 `dist/` 是最新的，用户自己 `⌘⇧R` 刷新看
 - 不许自动 push 到 `gh-pages`、不许跑 rsync 到部署仓库、不许 `gh repo create`、不许开 tunnel / funnel
 - 「上次你部署过」不构成许可；每一次都要当次授权
-- 已经存在的 `wczzsmmb/woyaoread` 仓库（`gh-pages` 分支）是历史产物，不要再往里推
+- 代码仓库：`wczzsmmb/woyaoread`（`main`），只放源码；Pages / 部署未配置
+- 旧仓库 `wczzsmmb/duiye`（`gh-pages` 历史产物）已弃用，不要再往里推
 - 部署相关动作（含改 `tools/deploy.*`、改 Pages 设置）一律先问
 
 ## 四、字标（方案已定，但目前不上）
@@ -51,7 +52,7 @@ AI 的写内容流程只有一条：写 `_woyaoread/cache/…` → `npm run vali
 不要主动加回去；要启用就在 `ShelfView.vue` / `ReaderView.vue` 里挂 `<Mark />`。
 顶栏现在用的是用户提供的应用图标 `logo.svg`（`public/logo.svg`），不是 `Mark.vue`。
 
-（备选记录：`Wordmark.vue` 是宋体字标，用户否掉了；`public/icon.svg` 仍是「对/页」叠排的应用图标。）
+（备选记录：`Wordmark.vue` 是宋体字标「我要读书」，用户否掉了；`public/icon.svg` 是「读/书」叠排的应用图标。）
 
 
 `src/components/Wordmark.vue` 由 `tools/make-wordmark.py` 生成，**不要手改**。
