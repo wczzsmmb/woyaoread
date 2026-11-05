@@ -3,6 +3,8 @@
 Markdown 精读器：**一张纸两栏读**（对开翻页 / 中英对照），目录、批注、排版收在纸右边的独立面板里。
 纯静态、无数据库、无云端；内容就是你自己的文件夹和 `md`。
 
+线上：<https://wczzsmmb.github.io/woyaoread/>
+
 - 构建期把 `md` 变成 HTML / KaTeX 公式 / JSON，前端只加载 Vue
 - 批注由本地小服务写进 `_woyaoread/annotations/`，**程序从不修改 `papers/`**
 - 批注的持久身份是「层名 + 段落内容哈希」，不是段号：插段、删段、挪目录都不会串位

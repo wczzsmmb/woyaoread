@@ -41,7 +41,8 @@ AI 的写内容流程只有一条：写 `_woyaoread/cache/…` → `npm run vali
 - 日常改完只做一件事：`npx vite build`，让本地 `dist/` 是最新的，用户自己 `⌘⇧R` 刷新看
 - 不许自动 push 到 `gh-pages`、不许跑 rsync 到部署仓库、不许 `gh repo create`、不许开 tunnel / funnel
 - 「上次你部署过」不构成许可；每一次都要当次授权
-- 代码仓库：`wczzsmmb/woyaoread`（`main`），只放源码；Pages / 部署未配置
+- 代码仓库：`wczzsmmb/woyaoread`（`main`），只放源码
+- 线上站点：<https://wczzsmmb.github.io/woyaoread/>（GitHub Actions 构建 `dist/` → Pages，见 `.github/workflows/deploy.yml`）
 - 旧仓库 `wczzsmmb/duiye`（`gh-pages` 历史产物）已弃用，不要再往里推
 - 部署相关动作（含改 `tools/deploy.*`、改 Pages 设置）一律先问
 
