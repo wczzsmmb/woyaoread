@@ -191,6 +191,73 @@ export function charRangeOf(
 
 /* ------------------------------ 绘制 ------------------------------ */
 
+/* 波浪自绘：原生 text-decoration: wavy 的波长跟着字号走（16px 正文约 4px），太密。
+   这里按 Range 的真实行矩形自己画正弦波，波长固定 12px，与字号无关。 */
+const WAVE = { len: 12, amp: 1.5, drop: 4 }
+const WAVE_VAR: Record<string, string> = {
+  'mk-wave': '--mark-wave',
+  'mk-wave-green': '--mark-wave-green',
+  'mk-wave-pink': '--mark-wave-pink',
+  'mk-wave-purple': '--mark-wave-purple',
+}
+const SVGNS = 'http://www.w3.org/2000/svg'
+
+function waveLayerOf(rows: HTMLElement): SVGSVGElement {
+  let svg = rows.querySelector<SVGSVGElement>(':scope > svg.wave-layer')
+  if (!svg) {
+    svg = document.createElementNS(SVGNS, 'svg')
+    svg.setAttribute('class', 'wave-layer')
+    svg.setAttribute('aria-hidden', 'true')
+    rows.appendChild(svg)
+  }
+  return svg
+}
+
+/** 一段正弦：从 x,y 起、宽 len，先上后下；一个周期 = 两个半周期 */
+function wavePath(x: number, y: number, len: number): string {
+  const half = WAVE.len / 2
+  let d = `M${x.toFixed(1)} ${y.toFixed(1)}`
+  let left = len
+  let dir = -1
+  while (left > 0.4) {
+    const seg = Math.min(half, left)
+    const k = seg / half
+    d += ` q${(seg / 2).toFixed(1)} ${(dir * 2 * WAVE.amp * k).toFixed(2)} ${seg.toFixed(1)} 0`
+    left -= seg
+    dir = -dir
+  }
+  return d
+}
+
+/** 把一个 Range 的每一行画成一条波浪（长度 = 该行文字真实宽度） */
+function drawWave(range: Range, svg: SVGSVGElement, base: DOMRect, color: string): boolean {
+  const rects = Array.from(range.getClientRects()).filter((r) => r.width > 1.5 && r.height > 1)
+  if (!rects.length) return false
+  for (const r of rects) {
+    const x = r.left - base.left
+    const y = r.bottom - base.top + WAVE.drop
+    const path = document.createElementNS(SVGNS, 'path')
+    path.setAttribute('d', wavePath(x, y, r.width))
+    path.setAttribute('stroke', color)
+    svg.appendChild(path)
+  }
+  return true
+}
+
+/** 字体未就位时先画一遍，等 document.fonts.ready 再重画（行高会变） */
+let lastPaint: { root: HTMLElement; records: PaintRec[]; rows: Row[] } | null = null
+let repaintQueued = false
+function queueFontRepaint() {
+  if (repaintQueued || !lastPaint) return
+  const fonts = (document as any).fonts
+  if (!fonts || fonts.status !== 'loading') return
+  repaintQueued = true
+  fonts.ready.then(() => {
+    repaintQueued = false
+    if (lastPaint) paint(lastPaint.root, lastPaint.records, lastPaint.rows)
+  })
+}
+
 /** 一条批注要画的东西 */
 export interface PaintRec {
   key: string
@@ -208,10 +275,12 @@ export interface PaintRec {
  * 全量重画：按样式分组，一种样式一个 Highlight（可含多个 Range）。
  * - 记号（marker / wave / line / dash）按 `mark` 上色
  * - 有想法的句子另外加一条虚线（和 mark 共存，两个 Highlight 组叠着画）
+ * - 波浪例外：由 .wave-layer 里的 SVG path 自绘（波长可调），不再走 Highlight
  * 返回成功画上的条数。
  */
 export function paint(root: HTMLElement | null, records: PaintRec[], rows: Row[]): number {
   if (!highlightOK) return 0
+  lastPaint = root ? { root, records, rows } : null
   const registry = CSS.highlights as Map<string, any>
   // 旧的组全部撤掉重建，避免残留死 Range
   for (const name of Array.from(registry.keys())) if (name.startsWith('mk-')) registry.delete(name)
@@ -221,6 +290,15 @@ export function paint(root: HTMLElement | null, records: PaintRec[], rows: Row[]
     list.push(range)
     byKind.set(name, list)
   }
+
+  // 波浪自绘层：.rows 在就用 SVG；不在就回落成 ::highlight 的原生 wavy
+  const rowsEl = root?.querySelector<HTMLElement>('.rows') || null
+  const svg = rowsEl ? waveLayerOf(rowsEl) : null
+  if (svg) svg.textContent = ''
+  const base = rowsEl?.getBoundingClientRect() || null
+  const css = getComputedStyle(document.documentElement)
+  const colorOf = (name: string) => css.getPropertyValue(WAVE_VAR[name] || '--mark-wave').trim() || '#3b82f6'
+
   let painted = 0
   for (const rec of records) {
     const rowEl = root?.querySelectorAll<HTMLElement>('.row')[rec.rowIndex] ?? null
@@ -228,19 +306,23 @@ export function paint(root: HTMLElement | null, records: PaintRec[], rows: Row[]
     if (!range) continue
     const hasNote = (rec.text || '').trim().length > 0
     const markName = rec.mark ? hlNameOf(rec.mark) : ''
+    const isWave = markName.startsWith('mk-wave')
+    // 波浪走自绘；自绘失败才落回 Highlight
+    const wave = () => !(svg && base && drawWave(range!, svg, base, colorOf(markName))) && push(markName, range!)
     if (hasNote) {
       // 写过想法：句子下面一定有线。
       // text-decoration 一个元素只能有一套，所以：
       //   马克笔 + 线 → 底色 + 虚线（属性不冲突，叠着好看）
       //   波浪 → 留波浪（用户自己选的，比虚线好认）
       //   直线 / 虚线 / 没记号 → 统一画虚线（旧数据的纯想法存的就是 line）
-      if (markName.startsWith('mk-wave')) push(markName, range)
+      if (isWave) wave()
       else {
         if (markName.startsWith('mk-hl') || markName === 'mk-highlight') push(markName, range)
         push('mk-dash', range)
       }
     } else if (markName) {
-      push(markName, range)
+      if (isWave) wave()
+      else push(markName, range)
     }
     painted++
   }
@@ -252,15 +334,18 @@ export function paint(root: HTMLElement | null, records: PaintRec[], rows: Row[]
       /* 单组失败不影响其它组 */
     }
   }
+  queueFontRepaint()
   void rows // 行序校验交给调用方；此处仅签名对齐
   return painted
 }
 
 /** 全部撤掉（换文档/组件卸载时用） */
 export function unpaint() {
+  lastPaint = null
   if (!highlightOK) return
   const registry = CSS.highlights as Map<string, any>
   for (const name of Array.from(registry.keys())) if (name.startsWith('mk-')) registry.delete(name)
+  document.querySelectorAll('svg.wave-layer').forEach((el) => el.remove())
 }
 
 /* ------------------------------ 选区 → 锚点 ------------------------------ */

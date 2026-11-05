@@ -236,34 +236,35 @@
   background-color: var(--mark-hl-pink);
 }
 
-/* 波浪：细、圆头正弦，贴住被标文字的宽度 */
-::highlight(mk-wave) {
+/* 波浪：由 annotator.ts 在 .rows 里自绘（波长 12px，跟字号无关）。
+   原生 text-decoration: wavy 的波长挂在字号上，16px 正文只有 ~4px，太密——
+   下面这四条只在自绘层建不起来时兜底。 */
+:highlight(mk-wave) {
   text-decoration-line: underline;
   text-decoration-style: wavy;
   text-decoration-color: var(--mark-wave);
   text-decoration-thickness: var(--mark-thick);
   text-underline-offset: var(--mark-offset);
 }
-::highlight(mk-wave-green) {
-  text-decoration-line: underline;
-  text-decoration-style: wavy;
-  text-decoration-color: var(--mark-wave-green);
-  text-decoration-thickness: var(--mark-thick);
-  text-underline-offset: var(--mark-offset);
+
+/* 自绘波浪层：贴在 .rows 上，随翻页的 translateX 一起走；只覆盖被标文字的真实宽度 */
+.rows {
+  position: relative;
 }
-::highlight(mk-wave-pink) {
-  text-decoration-line: underline;
-  text-decoration-style: wavy;
-  text-decoration-color: var(--mark-wave-pink);
-  text-decoration-thickness: var(--mark-thick);
-  text-underline-offset: var(--mark-offset);
+.wave-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
 }
-::highlight(mk-wave-purple) {
-  text-decoration-line: underline;
-  text-decoration-style: wavy;
-  text-decoration-color: var(--mark-wave-purple);
-  text-decoration-thickness: var(--mark-thick);
-  text-underline-offset: var(--mark-offset);
+.wave-layer path {
+  fill: none;
+  stroke-width: 1.15px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* 直线：红实线，细，贴字底 */
