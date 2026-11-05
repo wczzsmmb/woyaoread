@@ -81,6 +81,7 @@ AI 的写内容流程只有一条：写 `_woyaoread/cache/…` → `npm run vali
 - 批注主键格式 `^(index|zh)::[0-9a-f]{8}(#\d+)?$`，别改
 - 波浪线由 `src/lib/annotator.ts` 在 `.rows` 里自绘 SVG（`svg.wave-layer`，周期 12px），**别改回 `text-decoration: wavy`**——原生波长跟字号绑定，16px 正文只有 ~4px、太密
 - 卡片悬停只换背景，**不做 `translateY` 上浮**；阴影保持很浅
+- 正文首个 H1 **不删**（`visibleRows === rows`，批注行号两边一致）；桌面单栏由 CSS 藏起来（页头已有标题），对开与手机照常显示
 - 端口固定 **43999**；批注服务只碰 `_woyaoread/annotations/`
 - 构建不混淆，但开压缩（`minify: 'esbuild'`），并保留 sourcemap
 

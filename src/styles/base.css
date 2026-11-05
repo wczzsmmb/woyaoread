@@ -1366,6 +1366,13 @@ a {
   color: var(--fg-4);
 }
 
+/* 桌面单栏时 .doc__head 已经给了标题，正文开头的 H1 不再重复；
+   对开（.page--spread）和手机（.page--paged）没有页头，H1 照常显示。
+   用 visibility 而不是 display：分页测量仍按有这块算，两边行号也不会错。 */
+.page:not(.page--spread):not(.page--paged) .rows .row--heading[data-depth="1"] {
+  display: none;
+}
+
 /* 正文：纸张内边距由 .page 管，这里不再留栏位 */
 .doc__head {
   max-width: 70ch;

@@ -123,17 +123,15 @@ const rowCols = computed(() => {
   return `minmax(0,${a}fr) minmax(0,${b}fr)`
 })
 
-const visibleRows = computed(() => {
-  const rows = article.value?.rows || []
-  // 正文自带的 H1 与页头标题重复，去掉第一个
-  const i = rows.findIndex((r) => r.type === 'heading' && r.depth === 1)
-  return i === 0 ? rows.slice(1) : rows
-})
+const visibleRows = computed(() => article.value?.rows || [])
+
+/** 桌面单栏时纸上方有页头（article.title），正文的 H1 就不再重复显示；
+    对开与手机没有那个页头，H1 照常显示。用 CSS 隐藏，行号两边保持一致。 */
 
 const resolved = computed(() => {
   const a = article.value
   if (!a) return { map: {}, lost: [] as { key: string; item: any }[] }
-  // 用 visibleRows 算：正文那个 H1 被去掉了，行号必须和 DocRows 用的一套
+  // 行号必须和 DocRows 用的一套（visibleRows === rows）
   return resolve({ ...a, rows: visibleRows.value }, ann.items)
 })
 const seqOfKey = (key: string) => {
