@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>阅读器 · 文字批注原型</title>
+<style>
+  :root { color-scheme: light; --ink:#20242b; --muted:#858b95; --line:#e7e9ed; --panel:#2f3236; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:#f3f4f6; color:var(--ink); font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif; }
+  body { min-height:100vh; }
+  button { font:inherit; }
+  .topbar { height:68px; display:flex; align-items:center; justify-content:space-between; padding:0 clamp(24px,5.2vw,84px); color:#777f89; font-size:14px; }
+  .brand, .nav-right { display:flex; align-items:center; gap:18px; }
+  .brand-mark { width:23px;height:23px;border-radius:7px;background:#5d626a;color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700; }
+  .brand-name { color:#555d67;font-weight:600;font-size:15px; }
+  .nav-link { border:0;background:none;color:#747c86;padding:8px 2px;cursor:pointer; }
+  .avatar { width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#d5a7a0,#8d6676);color:#fff;display:grid;place-items:center;font-size:12px; }
+  .reader-card { width:min(91vw,1370px); min-height:calc(100vh - 112px); margin:8px auto 36px; background:#fff;border-radius:18px;box-shadow:0 14px 50px rgba(25,35,50,.055);padding:56px clamp(34px,5.4vw,78px) 30px; position:relative; }
+  .book-heading { display:flex; align-items:center; gap:14px; color:#9aa0a8; font-size:13px; margin:0 0 28px; }
+  .book-heading .dash { width:15px;height:1px;background:#aeb4bc; }
+  .reader-content { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:clamp(48px,7.2vw,104px);align-items:start; }
+  .reader-column { min-width:0; font-family:"Songti SC","Noto Serif CJK SC","SimSun",serif; font-size:clamp(20px,1.95vw,27px);line-height:1.88;letter-spacing:.015em;color:#20242b;overflow-wrap:anywhere; }
+  .reader-column p { margin:0 0 22px; text-indent:0; }
+  .reader-column p + p { margin-top:4px; }
+  .page-footer { display:flex;align-items:center;justify-content:space-between;margin-top:24px;color:#9aa0a8;font-size:13px; }
+  .page-btn { border:1px solid #e1e4e8;border-radius:20px;background:#fff;color:#737b85;padding:7px 14px;cursor:pointer; }
+  .page-btn:hover { background:#f8f9fa; }
+  .side-tools { position:fixed;right:0;top:39%;display:flex;flex-direction:column;gap:14px;z-index:20; }
+  .side-tool { width:54px;height:54px;border-radius:50% 0 0 50%;border:0;background:#fff;color:#8c939c;box-shadow:0 3px 16px rgba(20,30,45,.08);font-size:19px;cursor:pointer; }
+  .side-tool:hover { color:#454b53;background:#fafafa; }
+  .selection-toolbar { position:fixed;z-index:1000;display:none;left:0;top:0;transform:translateX(-50%);filter:drop-shadow(0 9px 18px rgba(0,0,0,.12));user-select:none; }
+  .selection-toolbar.visible { display:flex;flex-direction:column;align-items:center;gap:9px; }
+  .palette { display:flex;align-items:center;gap:20px;padding:12px 20px;background:rgba(43,46,50,.97);border-radius:32px;min-height:58px; }
+  .color-btn { width:26px;height:26px;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;padding:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16); }
+  .color-btn svg { width:16px;height:16px;opacity:0; }
+  .color-btn.selected svg { opacity:1; }
+  .color-btn.selected { outline:2px solid rgba(255,255,255,.45);outline-offset:2px; }
+  .tools { display:flex;align-items:stretch;gap:0;padding:8px 10px;background:rgba(43,46,50,.97);border-radius:19px;min-height:76px; }
+  .tool-btn { min-width:76px;padding:5px 7px;border:0;background:transparent;color:#f4f5f6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;border-radius:10px;font-size:12px;white-space:nowrap; }
+  .tool-btn:hover { background:rgba(255,255,255,.11); }
+  .tool-btn svg { width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+  .toolbar-notch { width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:13px solid rgba(43,46,50,.97);margin-top:-9px; }
+  .notes-panel { position:fixed;right:22px;top:110px;bottom:28px;width:min(360px,calc(100vw - 44px));background:#fff;border:1px solid #e8eaee;border-radius:16px;box-shadow:0 12px 40px rgba(20,30,45,.14);z-index:500;display:none;flex-direction:column;overflow:hidden; }
+  .notes-panel.open { display:flex; }
+  .panel-head { display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #edf0f2;font-weight:600; }
+  .icon-btn { border:0;background:transparent;color:#858c95;font-size:21px;cursor:pointer; }
+  .notes-list { overflow:auto;padding:12px; }
+  .note-item { padding:13px 14px;border:1px solid #edf0f2;border-radius:12px;margin-bottom:10px;cursor:pointer; }
+  .note-item:hover { background:#fafbfc; }
+  .note-quote { font-family:"Songti SC","SimSun",serif;font-size:15px;line-height:1.7;color:#444b54;margin-bottom:6px; }
+  .note-body { font-size:13px;color:#858b94;line-height:1.6;white-space:pre-wrap; }
+  .note-meta { font-size:11px;color:#a0a6ae;margin-top:8px; }
+  .empty-notes { padding:35px 18px;text-align:center;color:#a0a6ae;font-size:13px;line-height:1.8; }
+  .modal-backdrop { display:none;position:fixed;inset:0;background:rgba(20,25,32,.28);z-index:1200;align-items:center;justify-content:center;padding:20px; }
+  .modal-backdrop.open { display:flex; }
+  .note-modal { width:min(480px,100%);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:22px; }
+  .modal-title { font-size:17px;font-weight:650;margin-bottom:14px; }
+  .quote-preview { padding:11px 13px;border-radius:9px;background:#f5f6f8;color:#555d67;font-family:"Songti SC","SimSun",serif;font-size:15px;line-height:1.7;margin-bottom:14px;max-height:100px;overflow:auto; }
+  .note-input { width:100%;min-height:130px;resize:vertical;border:1px solid #dfe3e8;border-radius:10px;padding:12px;font:14px/1.7 "PingFang SC","Microsoft YaHei",Arial,sans-serif;outline:none; }
+  .note-input:focus { border-color:#8baee8;box-shadow:0 0 0 3px rgba(80,130,210,.1); }
+  .modal-actions { display:flex;justify-content:flex-end;gap:9px;margin-top:14px; }
+  .btn { border:1px solid #dfe3e8;border-radius:9px;padding:8px 15px;background:#fff;color:#59616b;cursor:pointer; }
+  .btn.primary { background:#30343a;color:#fff;border-color:#30343a; }
+  .toast { position:fixed;left:50%;bottom:28px;transform:translate(-50%,12px);background:#30343a;color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:1500; }
+  .toast.show { opacity:1;transform:translate(-50%,0); }
+  .compat { position:fixed;left:14px;bottom:12px;font-size:11px;color:#9299a2;z-index:10; }
+  @media(max-width:850px) { .reader-card{width:94vw;padding:34px 26px 24px}.reader-content{grid-template-columns:1fr;gap:18px}.reader-column{font-size:21px}.side-tools{right:0;top:auto;bottom:18px}.side-tool{width:44px;height:44px}.tool-btn{min-width:54px;font-size:10px}.palette{gap:14px}.tools{padding:6px}.selection-toolbar{max-width:calc(100vw - 12px)} }
+</style>
+<style id="highlight-styles"></style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="brand-mark">书</div><span class="brand-name">围城</span><span>▱ 加入书架</span></div>
+  <div class="nav-right"><button class="nav-link">首页</button><span>|</span><button class="nav-link" id="openNotesTop">我的笔记</button><span>|</span><div class="avatar">读</div></div>
+</header>
+<main class="reader-card">
+  <div class="book-heading"><span class="dash"></span><span>正文 · 阅读与批注</span></div>
+  <section class="reader-content" id="readerContent">
+    <article class="reader-column" data-scope="left">
+      <p>那个戴太阳眼镜、身上摊本小说的女人，衣服极斯文讲究。皮肤在东方人里，要算得白，可惜这白色不顶新鲜，带些干滞。她去掉了黑眼镜，眉清目秀，只是嘴唇嫌薄，擦了口红还不够丰厚。</p>
+      <p>假使她从帆布躺椅上站起来，会见得身段瘦削，也许轮廓的线条太硬，像方头钢笔划成的。年龄看上去有三十五六，不过新派女人的年龄好比旧式女人合婚帖上的年庚，需要考订学家所谓外证据来断定准确性，本身是看不出的。</p>
+      <p>那男孩子的母亲已有三十开外，穿件半旧的黑纱旗袍，满面劳碌困倦，加上天生的倒挂眉毛，愈觉愁苦可怜。孩子不足两岁，塌鼻子，眼睛两条斜缝，眉毛高高在上，跟眼睛远隔得彼此不相干。</p>
+      <p>她说话时总带着一点疲惫，像是许多事情都没有真正放在心上。旁人看她神色平静，却很难猜出她心里究竟藏着什么。</p>
+    </article>
+    <article class="reader-column" data-scope="right">
+      <p>要害相思病，活像报上讽刺画里中国人的脸。他倒会走路，一刻不停地要乱跑；母亲在他身上牵了一条皮带，他跑不上三四步就给拉回来。</p>
+      <p>他母亲怕热，拉得手累心烦，又惦记着丈夫在下面的输赢，不住骂这孩子过于顽皮。这孩子跑不到哪里去，便改变宗旨，扑向看书的女人身上。</p>
+      <p>那女人平日就有一种孤芳自赏、落落难合的神情——大宴会上没人敷衍的来宾，或喜酒席上过时未嫁的少女所常有的神情——此刻更流露出嫌恶，黑眼镜也遮盖不了。</p>
+      <p>孩子的母亲有些觉得，抱歉地拉皮带道：“你这淘气的孩子，去跟苏小姐捣乱！快回来。苏小姐，你真用功！学问那么好，还成天看书。”</p>
+      <p>她说完又低下头去，仿佛刚才的一切都只是生活里一个微不足道的小插曲。</p>
+    </article>
+  </section>
+  <footer class="page-footer"><button class="page-btn" id="prevPage">‹ 上一页</button><span>3–4 / 52 页 · 示例阅读页</span><button class="page-btn" id="nextPage">下一页 ›</button></footer>
+</main>
+<div class="side-tools">
+  <button class="side-tool" title="目录" id="tocBtn">☰</button>
+  <button class="side-tool" title="我的笔记" id="notesBtn">▤</button>
+  <button class="side-tool" title="阅读设置" id="fontBtn">Aa</button>
+</div>
+
+<div class="selection-toolbar" id="selectionToolbar" aria-label="文字批注工具栏">
+  <div class="palette" id="palette">
+    <button class="color-btn" data-color="pink" style="background:#f28d98" title="粉色"><svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" fill="none" stroke="#292d31" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="color-btn" data-color="purple" style="background:#b994df" title="紫色"><svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" fill="none" stroke="#292d31" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="color-btn selected" data-color="blue" style="background:#68a8e8" title="蓝色"><svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" fill="none" stroke="#292d31" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="color-btn" data-color="green" style="background:#78c982" title="绿色"><svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" fill="none" stroke="#292d31" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="color-btn" data-color="yellow" style="background:#f4cf70" title="黄色"><svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" fill="none" stroke="#292d31" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <div class="tools" id="tools">
+    <button class="tool-btn" data-action="copy"><svg viewBox="0 0 24 24"><rect x="8" y="7" width="12" height="14" rx="1.5"/><path d="M16 7V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h3"/></svg><span>复制</span></button>
+    <button class="tool-btn" data-action="marker"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="currentColor" opacity=".22" stroke="none"/><path d="M8 16 11 7h2l3 9M9 13h6"/></svg><span>马克笔</span></button>
+    <button class="tool-btn" data-action="wave"><svg viewBox="0 0 24 24"><path d="M4 8h3l2 5 4-9 3 9 2-5h2"/><path d="M4 19c2-3 4 3 6 0s4 3 6 0 4 3 6 0"/></svg><span>波浪线</span></button>
+    <button class="tool-btn" data-action="line"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 18h14"/><path d="M12 4v10"/></svg><span>直线</span></button>
+    <button class="tool-btn" data-action="delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"/></svg><span>删除划线</span></button>
+    <button class="tool-btn" data-action="note"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v9a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4.7A2.5 2.5 0 0 1 4 14.5z"/></svg><span>写想法</span></button>
+    <button class="tool-btn" data-action="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span>查询</span></button>
+  </div>
+  <div class="toolbar-notch"></div>
+</div>
+
+<aside class="notes-panel" id="notesPanel">
+  <div class="panel-head"><span>我的笔记与批注</span><button class="icon-btn" id="closeNotes">×</button></div>
+  <div class="notes-list" id="notesList"></div>
+</aside>
+<div class="modal-backdrop" id="noteModal">
+  <div class="note-modal">
+    <div class="modal-title">写想法</div>
+    <div class="quote-preview" id="quotePreview"></div>
+    <textarea class="note-input" id="noteInput" placeholder="记录此处的想法……"></textarea>
+    <div class="modal-actions"><button class="btn" id="cancelNote">取消</button><button class="btn primary" id="saveNote">保存笔记</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="compat" id="compat"></div>
+
+<script>
+(() => {
+  const content = document.getElementById('readerContent');
+  const toolbar = document.getElementById('selectionToolbar');
+  const palette = document.getElementById('palette');
+  const tools = document.getElementById('tools');
+  const notesPanel = document.getElementById('notesPanel');
+  const notesList = document.getElementById('notesList');
+  const modal = document.getElementById('noteModal');
+  const quotePreview = document.getElementById('quotePreview');
+  const noteInput = document.getElementById('noteInput');
+  const toastEl = document.getElementById('toast');
+  const STORAGE_KEY = 'reader-annotation-demo-v1';
+  const colors = {
+    pink:{hex:'#e96f86',bg:'rgba(242,141,152,.34)'},
+    purple:{hex:'#9b72c8',bg:'rgba(185,148,223,.32)'},
+    blue:{hex:'#347ff0',bg:'rgba(104,168,232,.28)'},
+    green:{hex:'#32a34b',bg:'rgba(120,201,130,.30)'},
+    yellow:{hex:'#b78a2d',bg:'rgba(244,207,112,.38)'}
+  };
+  let selectedColor = 'blue';
+  let activeRange = null;
+  let activeScope = null;
+  let annotations = [];
+  let pendingNote = null;
+  let toastTimer = null;
+  const ownedNames = new Set();
+
+  const supported = !!(window.CSS && CSS.highlights && window.Highlight);
+  document.getElementById('compat').textContent = supported ? '文字批注：CSS Highlight API 已启用' : '当前浏览器不支持 CSS Highlight API，请使用最新版 Chrome / Edge。';
+
+  function toast(message) {
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2100);
+  }
+
+  function scopeForNode(node) {
+    const el = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
+    return el ? el.closest('.reader-column') : null;
+  }
+
+  function getAnchor(range) {
+    const scope = scopeForNode(range.commonAncestorContainer);
+    if (!scope || !content.contains(scope)) return null;
+    const before = document.createRange();
+    before.selectNodeContents(scope);
+    before.setEnd(range.startContainer, range.startOffset);
+    const start = before.toString().length;
+    const quote = range.toString();
+    if (!quote.trim()) return null;
+    const text = scope.textContent;
+    return {
+      scope: scope.dataset.scope,
+      start,
+      end: start + quote.length,
+      quote,
+      prefix: text.slice(Math.max(0, start - 32), start),
+      suffix: text.slice(start + quote.length, start + quote.length + 32)
+    };
+  }
+
+  function pointAt(scope, offset) {
+    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+    let node, remaining = offset, last = null;
+    while ((node = walker.nextNode())) {
+      last = node;
+      const length = node.nodeValue.length;
+      if (remaining <= length) return {node, offset:remaining};
+      remaining -= length;
+    }
+    if (last) return {node:last, offset:last.nodeValue.length};
+    return null;
+  }
+
+  function rangeFromAnchor(anchor) {
+    const scope = content.querySelector(`[data-scope="${anchor.scope}"]`);
+    if (!scope) return null;
+    const text = scope.textContent;
+    let start = anchor.start;
+    let end = anchor.end;
+    if (text.slice(start, end) !== anchor.quote) {
+      const candidates = [];
+      let at = text.indexOf(anchor.quote);
+      while (at !== -1) {
+        const pre = text.slice(Math.max(0, at - anchor.prefix.length), at);
+        const post = text.slice(at + anchor.quote.length, at + anchor.quote.length + anchor.suffix.length);
+        const score = commonSuffix(pre, anchor.prefix) + commonPrefix(post, anchor.suffix);
+        candidates.push({at,score});
+        at = text.indexOf(anchor.quote, at + 1);
+      }
+      if (!candidates.length) return null;
+      candidates.sort((a,b) => b.score - a.score || Math.abs(a.at-anchor.start)-Math.abs(b.at-anchor.start));
+      start = candidates[0].at;
+      end = start + anchor.quote.length;
+    }
+    const a = pointAt(scope, start);
+    const b = pointAt(scope, end);
+    if (!a || !b) return null;
+    const range = document.createRange();
+    try { range.setStart(a.node,a.offset); range.setEnd(b.node,b.offset); } catch { return null; }
+    return range;
+  }
+  function commonSuffix(a,b) { let i=0; while(i<a.length && i<b.length && a[a.length-1-i]===b[b.length-1-i]) i++; return i; }
+  function commonPrefix(a,b) { let i=0; while(i<a.length && i<b.length && a[i]===b[i]) i++; return i; }
+
+  function styleName(item) { return `ann-${item.kind}-${item.color}`; }
+  function installHighlightStyles() {
+    let css = '';
+    for (const [name,c] of Object.entries(colors)) {
+      css += `::highlight(ann-marker-${name}){background-color:${c.bg};color:inherit;}\n`;
+      css += `::highlight(ann-wave-${name}){text-decoration:underline wavy ${c.hex};text-decoration-thickness:2px;text-underline-offset:4px;color:inherit;}\n`;
+      css += `::highlight(ann-line-${name}){text-decoration:underline solid ${c.hex};text-decoration-thickness:2px;text-underline-offset:4px;color:inherit;}\n`;
+      css += `::highlight(ann-note-${name}){background-color:${c.bg};text-decoration:underline dotted ${c.hex};text-decoration-thickness:1.5px;text-underline-offset:3px;color:inherit;}\n`;
+    }
+    document.getElementById('highlight-styles').textContent = css;
+  }
+
+  function renderHighlights() {
+    if (!supported) return;
+    for (const name of ownedNames) CSS.highlights.delete(name);
+    ownedNames.clear();
+    const groups = new Map();
+    for (const item of annotations) {
+      const range = rangeFromAnchor(item);
+      if (!range) continue;
+      const name = styleName(item);
+      if (!groups.has(name)) groups.set(name, []);
+      groups.get(name).push(range);
+    }
+    for (const [name,ranges] of groups) {
+      const h = new Highlight();
+      ranges.forEach(r => h.add(r));
+      CSS.highlights.set(name,h);
+      ownedNames.add(name);
+    }
+    renderNotes();
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(annotations)); }
+    catch (e) { toast('本地保存失败：浏览器存储空间可能不足'); }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) annotations = JSON.parse(raw).filter(x => x && x.quote && x.scope);
+    } catch { annotations = []; }
+    renderHighlights();
+  }
+
+  function selectionRange() {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) return null;
+    const range = selection.getRangeAt(0).cloneRange();
+    const scope = scopeForNode(range.commonAncestorContainer);
+    if (!scope || !content.contains(scope)) return null;
+    if (!range.toString().trim()) return null;
+    return {range,scope};
+  }
+
+  function hideToolbar() {
+    toolbar.classList.remove('visible');
+    activeRange = null;
+    activeScope = null;
+  }
+
+  function placeToolbar(range) {
+    const rects = Array.from(range.getClientRects()).filter(r => r.width || r.height);
+    if (!rects.length) return;
+    const first = rects[0], last = rects[rects.length - 1];
+    const centerX = Math.min(window.innerWidth - 18, Math.max(18, (Math.min(...rects.map(r=>r.left)) + Math.max(...rects.map(r=>r.right))) / 2));
+    toolbar.style.left = `${centerX}px`;
+    toolbar.style.top = '8px';
+    const height = toolbar.getBoundingClientRect().height || 145;
+    let top = first.top - height - 12;
+    if (top < 8) top = last.bottom + 12;
+    if (top + height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - height - 8);
+    toolbar.style.top = `${top}px`;
+  }
+
+  function showToolbar() {
+    const selected = selectionRange();
+    if (!selected) { hideToolbar(); return; }
+    activeRange = selected.range.cloneRange();
+    activeScope = selected.scope;
+    toolbar.classList.add('visible');
+    updatePalette();
+    requestAnimationFrame(() => { if (activeRange) placeToolbar(activeRange); });
+  }
+
+  function updatePalette() {
+    palette.querySelectorAll('.color-btn').forEach(btn => btn.classList.toggle('selected', btn.dataset.color === selectedColor));
+  }
+
+  function addAnnotation(kind, noteText='') {
+    if (!activeRange) { toast('请先选中文字'); return; }
+    const anchor = getAnchor(activeRange);
+    if (!anchor) { toast('无法识别当前文字范围'); return; }
+    annotations.push({id:crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),kind,color:selectedColor,...anchor,note:noteText,createdAt:new Date().toISOString()});
+    save();
+    renderHighlights();
+    window.getSelection()?.removeAllRanges();
+    hideToolbar();
+    toast(kind === 'note' ? '笔记已保存' : '批注已添加');
+  }
+
+  function deleteSelectedAnnotations() {
+    if (!activeRange) { toast('请先选中要删除批注的文字'); return; }
+    const selected = getAnchor(activeRange);
+    if (!selected) return;
+    const before = annotations.length;
+    annotations = annotations.filter(item => {
+      if (item.scope !== selected.scope) return true;
+      const overlaps = item.start < selected.end && item.end > selected.start;
+      return !overlaps;
+    });
+    if (annotations.length === before) toast('当前选区没有批注');
+    else { save(); renderHighlights(); toast('已删除选区内的批注'); }
+    window.getSelection()?.removeAllRanges();
+    hideToolbar();
+  }
+
+  function openNoteModal() {
+    if (!activeRange) return;
+    const quote = activeRange.toString();
+    pendingNote = {range:activeRange.cloneRange(),scope:activeScope};
+    quotePreview.textContent = `“${quote}”`;
+    noteInput.value = '';
+    modal.classList.add('open');
+    setTimeout(() => noteInput.focus(), 20);
+  }
+  function closeNoteModal() { modal.classList.remove('open'); pendingNote = null; }
+
+  function renderNotes() {
+    const items = annotations.filter(a => a.kind === 'note' || a.note);
+    notesList.innerHTML = '';
+    if (!items.length) {
+      notesList.innerHTML = '<div class="empty-notes">还没有笔记。<br>选中正文中的文字，点击“写想法”即可添加。</div>';
+      return;
+    }
+    [...items].reverse().forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'note-item';
+      const quote = document.createElement('div'); quote.className = 'note-quote'; quote.textContent = `“${item.quote}”`;
+      const body = document.createElement('div'); body.className = 'note-body'; body.textContent = item.note || '（仅标记，没有附加想法）';
+      const meta = document.createElement('div'); meta.className = 'note-meta'; meta.textContent = new Date(item.createdAt).toLocaleString('zh-CN');
+      el.append(quote,body,meta);
+      el.addEventListener('click', () => {
+        const r = rangeFromAnchor(item);
+        if (r) {
+          const node = r.startContainer.nodeType === Node.ELEMENT_NODE ? r.startContainer : r.startContainer.parentElement;
+          node?.scrollIntoView({behavior:'smooth',block:'center'});
+          const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          activeRange = r.cloneRange(); activeScope = scopeForNode(r.commonAncestorContainer);
+          showToolbar();
+        }
+      });
+      notesList.appendChild(el);
+    });
+  }
+
+  function openNotes() { notesPanel.classList.add('open'); renderNotes(); }
+
+  document.addEventListener('pointerup', event => {
+    if (event.button !== 0) return;
+    if (toolbar.contains(event.target)) return;
+    setTimeout(showToolbar, 0);
+  });
+  document.addEventListener('keyup', event => {
+    if (['Shift','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) setTimeout(showToolbar,0);
+  });
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const scope = sel.rangeCount ? scopeForNode(sel.getRangeAt(0).commonAncestorContainer) : null;
+    if (scope && content.contains(scope)) setTimeout(showToolbar,0);
+  });
+  document.addEventListener('pointerdown', event => {
+    if (toolbar.contains(event.target)) event.preventDefault();
+    else if (!notesPanel.contains(event.target) && !event.target.closest('#notesBtn') && !event.target.closest('#openNotesTop') && !content.contains(event.target)) hideToolbar();
+  });
+  window.addEventListener('scroll', () => { if (activeRange && toolbar.classList.contains('visible')) placeToolbar(activeRange); }, true);
+  window.addEventListener('resize', () => { if (activeRange && toolbar.classList.contains('visible')) placeToolbar(activeRange); });
+
+  palette.addEventListener('click', event => {
+    const btn = event.target.closest('.color-btn');
+    if (!btn) return;
+    selectedColor = btn.dataset.color;
+    updatePalette();
+  });
+  tools.addEventListener('click', async event => {
+    const btn = event.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (!activeRange) { toast('请先选中文字'); return; }
+    if (action === 'copy') {
+      try { await navigator.clipboard.writeText(activeRange.toString()); toast('已复制选中文字'); }
+      catch { toast('复制失败，请检查浏览器剪贴板权限'); }
+    } else if (action === 'marker') addAnnotation('marker');
+    else if (action === 'wave') addAnnotation('wave');
+    else if (action === 'line') addAnnotation('line');
+    else if (action === 'delete') deleteSelectedAnnotations();
+    else if (action === 'note') openNoteModal();
+    else if (action === 'search') window.open(`https://www.baidu.com/s?wd=${encodeURIComponent(activeRange.toString())}`,'_blank','noopener');
+  });
+
+  document.getElementById('saveNote').addEventListener('click', () => {
+    if (!pendingNote) return;
+    const range = pendingNote.range;
+    const anchor = getAnchor(range);
+    if (!anchor) { toast('原文字范围已失效，请重新选择'); closeNoteModal(); return; }
+    annotations.push({id:crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),kind:'note',color:selectedColor,...anchor,note:noteInput.value.trim(),createdAt:new Date().toISOString()});
+    save(); renderHighlights(); closeNoteModal(); window.getSelection()?.removeAllRanges(); hideToolbar(); toast('笔记已保存');
+  });
+  document.getElementById('cancelNote').addEventListener('click', closeNoteModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeNoteModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeNoteModal(); hideToolbar(); notesPanel.classList.remove('open'); } });
+  document.getElementById('notesBtn').addEventListener('click', openNotes);
+  document.getElementById('openNotesTop').addEventListener('click', openNotes);
+  document.getElementById('closeNotes').addEventListener('click', () => notesPanel.classList.remove('open'));
+  document.getElementById('tocBtn').addEventListener('click', () => toast('目录面板将在后续版本加入'));
+  document.getElementById('fontBtn').addEventListener('click', () => {
+    const first = document.querySelector('.reader-column');
+    const current = parseFloat(getComputedStyle(first).fontSize);
+    const next = current >= 28 ? 22 : current + 2;
+    document.querySelectorAll('.reader-column').forEach(col => col.style.fontSize = `${next}px`);
+    toast(`正文字号：${next}px`);
+  });
+  document.getElementById('prevPage').addEventListener('click', () => toast('这是示例页，暂未接入真实分页数据'));
+  document.getElementById('nextPage').addEventListener('click', () => toast('这是示例页，暂未接入真实分页数据'));
+
+  installHighlightStyles();
+  load();
+})();
+</script>
+</body>
+</html>

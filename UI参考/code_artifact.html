@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>围城 - 电子书阅读器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Noto Serif SC"', '"Songti SC"', '"STSong"', 'SimSun', 'serif'],
+                        sans: ['"Noto Sans SC"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 图书文本排版 */
+        .book-content {
+            color: var(--reader-text-color, #1f1f1f);
+            font-size: var(--reader-font-size, 1.0625rem);
+            line-height: var(--reader-line-height, 2.15);
+            letter-spacing: 0.04em;
+            text-align: justify;
+            user-select: text;
+        }
+
+        /* 选中/高亮自定义效果 */
+        .hl-yellow {
+            background-color: #fef08a;
+            color: #1a1a1a;
+            padding: 1px 0;
+            border-radius: 2px;
+        }
+        .dark .hl-yellow {
+            background-color: #854d0e;
+            color: #fef08a;
+        }
+
+        .hl-wavy-blue {
+            text-decoration: underline;
+            text-decoration-style: wavy;
+            text-decoration-color: #3b82f6;
+            text-underline-offset: 6px;
+            text-decoration-thickness: 1.5px;
+        }
+
+        .hl-straight-green {
+            text-decoration: underline;
+            text-decoration-style: solid;
+            text-decoration-color: #22c55e;
+            text-underline-offset: 6px;
+            text-decoration-thickness: 1.5px;
+        }
+
+        .hl-straight-red {
+            text-decoration: underline;
+            text-decoration-style: solid;
+            text-decoration-color: #ef4444;
+            text-underline-offset: 6px;
+            text-decoration-thickness: 1.5px;
+        }
+
+        /* 水平/垂直隐藏滚动条 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 三角小箭头 */
+        .tooltip-arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px 6px 0 6px;
+            border-style: solid;
+            border-color: #262626 transparent transparent transparent;
+        }
+
+        ::selection {
+            background-color: #b4d5fe;
+            color: #111;
+        }
+    </style>
+</head>
+<body class="bg-[#f3f4f6] dark:bg-[#121212] text-gray-800 dark:text-gray-200 min-h-screen flex flex-col justify-between font-sans transition-colors duration-200">
+
+    <!-- 1. 顶部导航栏 -->
+    <header class="w-full px-6 py-3.5 flex items-center justify-between text-sm z-20">
+        <!-- 左侧：图标与书名 -->
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+                <button class="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors" title="书库">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                    </svg>
+                </button>
+                <span class="font-medium text-gray-900 dark:text-gray-100 text-base">围城</span>
+            </div>
+
+            <!-- 加入书架按钮 -->
+            <button id="btn-add-shelf" onclick="toggleBookmarkShelf()" class="flex items-center space-x-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-700 rounded-md px-2.5 py-1 transition-colors">
+                <svg id="shelf-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                </svg>
+                <span id="shelf-text">加入书架</span>
+            </button>
+        </div>
+
+        <!-- 右侧：导航与用户头像 -->
+        <div class="flex items-center space-x-5 text-xs text-gray-500 dark:text-gray-400">
+            <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors">首页</a>
+            <span class="text-gray-300 dark:text-gray-700">|</span>
+            <a href="#" onclick="toggleDrawer('notes')" class="hover:text-gray-900 dark:hover:text-white transition-colors">我的书架</a>
+            <!-- 用户头像 -->
+            <div class="w-7 h-7 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 cursor-pointer shadow-sm hover:opacity-90">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256" alt="Avatar" class="w-full h-full object-cover">
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. 主体阅读区与右侧工具栏 -->
+    <main class="flex-1 max-w-[1280px] w-full mx-auto px-4 md:px-8 py-2 flex gap-6 items-center justify-center relative">
+        
+        <!-- 电子书主页面卡片 -->
+        <div id="reader-card" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] w-full h-[760px] p-8 md:p-14 flex flex-col justify-between relative overflow-hidden transition-colors duration-200">
+            
+            <!-- 顶部装饰杠 -->
+            <div class="w-full flex justify-start -mt-2 mb-4">
+                <div class="w-5 h-[1.5px] bg-gray-400 dark:bg-gray-600"></div>
+            </div>
+
+            <!-- 阅读文本双栏区域 -->
+            <div id="book-text-container" class="book-content font-serif grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 flex-1 items-start overflow-y-auto no-scrollbar py-2">
+                
+                <!-- 第一页 / 左栏内容 -->
+                <div id="page-left" class="space-y-4">
+                    <p class="indent-8">
+                        司没当他是人，没要他父母为他补买船票。那个戴太阳眼镜、身上摊本小说的女人，衣服极斯文讲究。皮肤在东方人里，要算得白，可惜这白色不顶新鲜，带些干滞。她去掉了黑眼镜，眉清目秀，只是嘴唇嫌薄，擦了口红还不够丰厚。<span class="hl-yellow" data-id="1">假设她从帆布躺椅上站起来，会见得身段瘦削</span>，也许轮廓的线条太硬，像方头钢笔划成的。<span class="hl-wavy-blue" data-id="2">年龄看上去有二十五六，不过新派女人的年龄好比旧式女人合婚帖上的年庚</span>，<span class="hl-straight-green" data-id="3">需要考订学家所谓外证据来</span>断定真确性，本身是看不出的。那男孩子的母亲已有三十开外，穿件半旧的黑纱旗袍，满面劳碌困倦，加上天生的倒挂眉毛，愈觉愁苦可怜。孩子不足两岁，塌鼻子，眼睛两条斜缝，眉毛高高在上，跟眼睛远隔得彼此
+                    </p>
+                </div>
+
+                <!-- 第二页 / 右栏内容 -->
+                <div id="page-right" class="space-y-4">
+                    <p class="indent-8">
+                        要害相思病，活像报上讽刺画里中国人的脸。他刚会走路，一刻不停地要乱跑；母亲在他身上牵了一条皮带，他跑不上三四步就给拉回来。他母亲怕热，拉得手累心烦，又惦记着丈夫在下面的输赢，不住骂这孩子讨厌。这孩子跑不到哪里去，便改变宗旨，扑向看书的女人身上。那女人平日就有一种孤芳自赏、落落难合的神情——大宴会上没有人敷衍的来宾或喜酒席上过时未嫁的少女所常有的神情——此刻更流露出嫌恶，黑眼镜也遮盖不了。孩子的母亲有些觉得，抱歉地拉皮带道：“你这淘气的孩子，去跟苏小姐捣乱！快回来。——苏小姐，你真用功！学问那么好，还成天看书。孙先生常跟我说，女学生像苏小姐才算替中国争面子，人又美，
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- 底部翻页控制 -->
+            <div class="w-full flex justify-between items-center pt-4 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-800">
+                <button onclick="prevPage()" class="px-3.5 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all flex items-center space-x-1">
+                    <span>&lt; 上一页</span>
+                </button>
+                
+                <span id="page-indicator" class="text-gray-400 text-xs">第一章 ( 第 1 / 18 页 )</span>
+
+                <button onclick="nextPage()" class="px-3.5 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all flex items-center space-x-1">
+                    <span>下一页 &gt;</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- 3. 右侧悬浮工具栏按钮组 -->
+        <aside class="flex flex-col space-y-3 pl-1 z-10">
+            <!-- 1. 目录 -->
+            <button onclick="toggleDrawer('toc')" title="目录" class="w-10 h-10 bg-white dark:bg-[#222] rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                <svg class="w-5 h-5 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+
+            <!-- 2. 字号及设置 -->
+            <button onclick="toggleDrawer('settings')" title="阅读设置" class="w-10 h-10 bg-white dark:bg-[#222] rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-serif text-sm font-semibold group">
+                A<span class="text-[10px] font-sans">⁺</span>
+            </button>
+
+            <!-- 3. 笔记画笔 -->
+            <button onclick="toggleDrawer('notes')" title="书签与笔记" class="w-10 h-10 bg-white dark:bg-[#222] rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                <svg class="w-4.5 h-4.5 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                </svg>
+            </button>
+
+            <!-- 4. 全屏 / 双页切换 -->
+            <button onclick="toggleFullscreen()" title="切换全屏模式" class="w-10 h-10 bg-white dark:bg-[#222] rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                <svg class="w-4.5 h-4.5 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+            </button>
+
+            <!-- 5. 双栏/单栏布局切换 -->
+            <button onclick="toggleLayoutColumns()" title="切换单/双页排版" class="w-10 h-10 bg-white dark:bg-[#222] rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                <svg class="w-4.5 h-4.5 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 4.5v15m6-15v15M3 4.5h18v15H3z"/>
+                </svg>
+            </button>
+
+            <!-- 6. 字体选择切换 -->
+            <button onclick="cycleFontFamily()" title="切换字体(宋体/楷体/黑体)" class="w-10 h-10 bg-white dark:bg-[#222] rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-serif font-bold text-sm group">
+                <span id="font-family-badge">宋</span>
+            </button>
+
+            <!-- 7. 昼夜模式 -->
+            <button onclick="toggleDarkMode()" title="黑夜/白天模式" class="w-10 h-10 bg-white dark:bg-[#222] rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                <!-- 太阳 -->
+                <svg id="sun-icon" class="w-4.5 h-4.5 hidden dark:block text-yellow-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <!-- 月亮 -->
+                <svg id="moon-icon" class="w-4.5 h-4.5 block dark:hidden text-gray-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+            </button>
+        </aside>
+
+    </main>
+
+    <!-- 4. 选中文本弹出画笔菜单栏 (完全复刻图2UI) -->
+    <div id="selection-tooltip" class="fixed hidden z-50 transform -translate-x-1/2 -translate-y-full mb-3 transition-opacity duration-150 opacity-0 pointer-events-none">
+        <div class="bg-[#262626] text-white px-3 py-1.5 rounded-full shadow-2xl flex items-center space-x-3 text-xs tooltip-arrow">
+            <!-- 复制 -->
+            <button onclick="handleSelectionAction('copy')" class="flex flex-col items-center hover:text-gray-300 px-1.5 py-0.5 transition-colors">
+                <svg class="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <span class="text-[10px]">复制</span>
+            </button>
+
+            <!-- 马克笔 (黄高亮) -->
+            <button onclick="handleSelectionAction('yellow')" class="flex flex-col items-center hover:text-gray-300 px-1.5 py-0.5 transition-colors">
+                <span class="font-bold text-yellow-300 text-xs mb-0.5 underline">A</span>
+                <span class="text-[10px]">马克笔</span>
+            </button>
+
+            <!-- 波浪线 -->
+            <button onclick="handleSelectionAction('wavy')" class="flex flex-col items-center hover:text-gray-300 px-1.5 py-0.5 transition-colors">
+                <span class="font-bold text-blue-400 text-xs mb-0.5 underline decoration-wavy">A</span>
+                <span class="text-[10px]">波浪线</span>
+            </button>
+
+            <!-- 直线 -->
+            <button onclick="handleSelectionAction('straight')" class="flex flex-col items-center hover:text-gray-300 px-1.5 py-0.5 transition-colors">
+                <span class="font-bold text-red-400 text-xs mb-0.5 underline">A</span>
+                <span class="text-[10px]">直线</span>
+            </button>
+
+            <!-- 写想法 -->
+            <button onclick="handleSelectionAction('note')" class="flex flex-col items-center hover:text-gray-300 px-1.5 py-0.5 transition-colors">
+                <svg class="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                </svg>
+                <span class="text-[10px]">写想法</span>
+            </button>
+
+            <!-- AI 问书 -->
+            <button onclick="handleSelectionAction('ai')" class="flex flex-col items-center hover:text-blue-300 px-1.5 py-0.5 transition-colors">
+                <svg class="w-3.5 h-3.5 mb-0.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span class="text-[10px]">AI问书</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 5. 抽屉面板 / 弹窗结构 -->
+    <!-- 目录抽屉 (TOC Drawer) -->
+    <div id="drawer-toc" class="fixed inset-y-0 left-0 w-80 bg-white dark:bg-[#1e1e1e] shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 p-6 overflow-y-auto">
+        <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white">目录</h3>
+            <button onclick="closeDrawers()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <ul class="space-y-3 text-sm">
+            <li onclick="loadChapter(1)" class="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 font-medium text-blue-600 dark:text-blue-400 cursor-pointer flex justify-between">
+                <span>第一章：归国船上的萨姆与苏小姐</span>
+                <span class="text-xs text-gray-400">P.1</span>
+            </li>
+            <li onclick="loadChapter(2)" class="p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 cursor-pointer flex justify-between">
+                <span>第二章：抵达上海与方鸿渐的相亲</span>
+                <span class="text-xs text-gray-400">P.24</span>
+            </li>
+            <li onclick="loadChapter(3)" class="p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 cursor-pointer flex justify-between">
+                <span>第三章：唐晓芙与情窦初开</span>
+                <span class="text-xs text-gray-400">P.58</span>
+            </li>
+            <li onclick="loadChapter(4)" class="p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 cursor-pointer flex justify-between">
+                <span>第四章：三闾大学执教之旅</span>
+                <span class="text-xs text-gray-400">P.92</span>
+            </li>
+            <li onclick="loadChapter(5)" class="p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 cursor-pointer flex justify-between">
+                <span>第五章：围城困境与婚后磨难</span>
+                <span class="text-xs text-gray-400">P.145</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 阅读设置抽屉 -->
+    <div id="drawer-settings" class="fixed inset-y-0 right-0 w-80 bg-white dark:bg-[#1e1e1e] shadow-2xl z-50 transform translate-x-full transition-transform duration-300 p-6">
+        <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white">阅读偏好设置</h3>
+            <button onclick="closeDrawers()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="space-y-6 text-sm">
+            <!-- 字号调整 -->
+            <div>
+                <label class="block text-gray-500 dark:text-gray-400 mb-2">字号大小</label>
+                <div class="flex items-center space-x-4 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+                    <button onclick="changeFontSize(-1)" class="flex-1 py-1 bg-white dark:bg-gray-700 rounded shadow text-center font-bold">A-</button>
+                    <span id="font-size-val" class="text-xs font-mono">17px</span>
+                    <button onclick="changeFontSize(1)" class="flex-1 py-1 bg-white dark:bg-gray-700 rounded shadow text-center font-bold">A+</button>
+                </div>
+            </div>
+
+            <!-- 行间距调整 -->
+            <div>
+                <label class="block text-gray-500 dark:text-gray-400 mb-2">行高间距</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="changeLineHeight(1.8)" class="py-1.5 border dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-800">紧凑</button>
+                    <button onclick="changeLineHeight(2.15)" class="py-1.5 border border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">适中</button>
+                    <button onclick="changeLineHeight(2.5)" class="py-1.5 border dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-800">宽松</button>
+                </div>
+            </div>
+
+            <!-- 背景纸张质感 -->
+            <div>
+                <label class="block text-gray-500 dark:text-gray-400 mb-2">背景氛围</label>
+                <div class="grid grid-cols-4 gap-3">
+                    <button onclick="setThemeBg('white')" class="h-9 rounded-md border border-gray-300 bg-white" title="纯白"></button>
+                    <button onclick="setThemeBg('warm')" class="h-9 rounded-md border border-amber-200 bg-[#fbf0d9]" title="暖阳"></button>
+                    <button onclick="setThemeBg('green')" class="h-9 rounded-md border border-green-200 bg-[#e8f2e8]" title="护眼"></button>
+                    <button onclick="setThemeBg('dark')" class="h-9 rounded-md border border-gray-700 bg-[#1e1e1e]" title="夜间"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我的划线与笔记列表 Drawer -->
+    <div id="drawer-notes" class="fixed inset-y-0 right-0 w-80 bg-white dark:bg-[#1e1e1e] shadow-2xl z-50 transform translate-x-full transition-transform duration-300 p-6 overflow-y-auto">
+        <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="font-semibold text-lg text-gray-900 dark:text-white">划线与笔记 (3)</h3>
+            <button onclick="closeDrawers()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div id="notes-list" class="space-y-4 text-xs">
+            <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-l-4 border-yellow-400 space-y-1">
+                <p class="text-gray-800 dark:text-gray-200">“假设她从帆布躺椅上站起来，会见得身段瘦削”</p>
+                <span class="text-[10px] text-gray-400 block">马克笔高亮 · 今天 10:24</span>
+            </div>
+            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-400 space-y-1">
+                <p class="text-gray-800 dark:text-gray-200">“年龄看上去有二十五六，不过新派女人的年龄好比旧式女人合婚帖上的年庚”</p>
+                <span class="text-[10px] text-gray-400 block">波浪线 · 今天 11:05</span>
+            </div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border-l-4 border-gray-400 space-y-1">
+                <p class="text-gray-800 dark:text-gray-200">“需要考订学家所谓外证据来”</p>
+                <div class="text-gray-600 dark:text-gray-400 italic bg-white dark:bg-gray-900 p-2 rounded mt-1">
+                    想法：钱钟书对女性心理和社交伪装的讽刺极其犀利。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. AI 问书 / 写想法 Modal 框 -->
+    <div id="ai-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-800 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    <h3 id="modal-title" class="font-semibold text-gray-900 dark:text-white">AI 智能解读</h3>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-300 italic" id="modal-selected-text">
+                "选中的文本..."
+            </div>
+
+            <!-- 动态生成解答或想法输入框 -->
+            <div id="modal-content-area" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                <!-- 动态充填 -->
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal()" class="px-4 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:opacity-90">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 简易 Toast 通知 -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 transition-opacity duration-200 opacity-0 pointer-events-none">
+        已成功复制到剪贴板
+    </div>
+
+    <!-- JavaScript 交互控制 -->
+    <script>
+        let currentFontSize = 17;
+        let selectedText = "";
+        let selectedRange = null;
+        let currentFontFamilyIndex = 0;
+        const fontFamilies = [
+            { label: '宋', family: '"Noto Serif SC", "Songti SC", serif' },
+            { label: '楷', family: '"Kaiti SC", "STKaiti", serif' },
+            { label: '黑', family: '"Noto Sans SC", sans-serif' }
+        ];
+
+        // 页面初始化
+        window.onload = function() {
+            setupSelectionListener();
+        };
+
+        // 监视文本选中事件
+        function setupSelectionListener() {
+            const container = document.getElementById('reader-card');
+            const tooltip = document.getElementById('selection-tooltip');
+
+            document.addEventListener('selectionchange', () => {
+                const selection = window.getSelection();
+                if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+                    hideTooltip();
+                    return;
+                }
+
+                const text = selection.toString().trim();
+                const range = selection.getRangeAt(0);
+                
+                // 确保在阅读容器内选择
+                if (container.contains(range.commonAncestorContainer)) {
+                    selectedText = text;
+                    selectedRange = range.cloneRange();
+                    
+                    const rect = range.getBoundingClientRect();
+                    showTooltip(rect);
+                }
+            });
+        }
+
+        // 展现悬浮标注工具栏 (图2样式)
+        function showTooltip(rect) {
+            const tooltip = document.getElementById('selection-tooltip');
+            tooltip.classList.remove('hidden');
+            
+            // 计算定位
+            const left = rect.left + (rect.width / 2);
+            const top = rect.top + window.scrollY;
+
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+            
+            setTimeout(() => {
+                tooltip.classList.remove('opacity-0', 'pointer-events-none');
+            }, 10);
+        }
+
+        function hideTooltip() {
+            const tooltip = document.getElementById('selection-tooltip');
+            tooltip.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                tooltip.classList.add('hidden');
+            }, 150);
+        }
+
+        // 处理高亮 / 标注 / AI / 复制等操作
+        function handleSelectionAction(action) {
+            if (!selectedText) return;
+
+            if (action === 'copy') {
+                // 复制功能
+                const dummy = document.createElement("textarea");
+                document.body.appendChild(dummy);
+                dummy.value = selectedText;
+                dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+                showToast("已成功复制选中文字");
+            } else if (action === 'yellow' || action === 'wavy' || action === 'straight') {
+                // 应用样式划线高亮
+                applyHighlightStyle(action);
+            } else if (action === 'note') {
+                openNoteModal();
+            } else if (action === 'ai') {
+                openAiModal();
+            }
+
+            hideTooltip();
+            window.getSelection().removeAllRanges();
+        }
+
+        // 渲染文本划线高亮
+        function applyHighlightStyle(styleType) {
+            if (!selectedRange) return;
+
+            const span = document.createElement('span');
+            if (styleType === 'yellow') span.className = 'hl-yellow';
+            else if (styleType === 'wavy') span.className = 'hl-wavy-blue';
+            else if (styleType === 'straight') span.className = 'hl-straight-red';
+
+            try {
+                selectedRange.surroundContents(span);
+                showToast("划线保存成功");
+            } catch (e) {
+                showToast("跨段落高亮请分段进行选择");
+            }
+        }
+
+        // 昼夜模式切换
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // 单/双栏模式切换
+        function toggleLayoutColumns() {
+            const textContainer = document.getElementById('book-text-container');
+            if (textContainer.classList.contains('md:grid-cols-2')) {
+                textContainer.classList.remove('md:grid-cols-2');
+                showToast("已切换为单栏显示");
+            } else {
+                textContainer.classList.add('md:grid-cols-2');
+                showToast("已切换为双栏显示");
+            }
+        }
+
+        // 切换字体
+        function cycleFontFamily() {
+            currentFontFamilyIndex = (currentFontFamilyIndex + 1) % fontFamilies.length;
+            const current = fontFamilies[currentFontFamilyIndex];
+            document.getElementById('font-family-badge').innerText = current.label;
+            document.getElementById('book-text-container').style.fontFamily = current.family;
+            showToast(`已切换字体: ${current.label}体`);
+        }
+
+        // 字号调整
+        function changeFontSize(delta) {
+            currentFontSize = Math.max(14, Math.min(26, currentFontSize + delta));
+            document.getElementById('book-text-container').style.setProperty('--reader-font-size', `${currentFontSize}px`);
+            document.getElementById('font-size-val').innerText = `${currentFontSize}px`;
+        }
+
+        // 行高调整
+        function changeLineHeight(lh) {
+            document.getElementById('book-text-container').style.setProperty('--reader-line-height', lh);
+            showToast("行间距已调整");
+        }
+
+        // 设置阅读器卡片质感背景
+        function setThemeBg(type) {
+            const card = document.getElementById('reader-card');
+            card.style.backgroundColor = '';
+            if (type === 'warm') card.style.backgroundColor = '#fbf0d9';
+            else if (type === 'green') card.style.backgroundColor = '#e8f2e8';
+            else if (type === 'dark') document.documentElement.classList.add('dark');
+        }
+
+        // 打开/关闭抽屉
+        function toggleDrawer(id) {
+            closeDrawers();
+            const drawer = document.getElementById(`drawer-${id}`);
+            if (drawer) {
+                drawer.classList.remove('-translate-x-full', 'translate-x-full');
+            }
+        }
+
+        function closeDrawers() {
+            document.getElementById('drawer-toc').classList.add('-translate-x-full');
+            document.getElementById('drawer-settings').classList.add('translate-x-full');
+            document.getElementById('drawer-notes').classList.add('translate-x-full');
+        }
+
+        // 全屏切换
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        // 加入书架按钮
+        function toggleBookmarkShelf() {
+            const text = document.getElementById('shelf-text');
+            const icon = document.getElementById('shelf-icon');
+            if (text.innerText === '加入书架') {
+                text.innerText = '已在书架';
+                icon.setAttribute('fill', 'currentColor');
+                showToast("成功加入书架");
+            } else {
+                text.innerText = '加入书架';
+                icon.setAttribute('fill', 'none');
+                showToast("已从书架移出");
+            }
+        }
+
+        // AI 问书弹窗
+        function openAiModal() {
+            document.getElementById('modal-title').innerText = "AI 智能分析";
+            document.getElementById('modal-selected-text').innerText = `"${selectedText}"`;
+            document.getElementById('modal-content-area').innerHTML = `
+                <div class="space-y-2">
+                    <p class="font-medium text-blue-600 dark:text-blue-400">文学赏析与背景注解：</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">此段文字精妙地勾勒了鲍小姐（苏小姐）外貌与性格特征。钱钟书先生善用比喻，“像方头钢笔划成的”极具现代线条感，暗喻其性格的生硬与新潮；而“旧式女人合婚帖”则将新旧交替时代的社会风气刻画得淋漓尽致。</p>
+                </div>
+            `;
+            document.getElementById('ai-modal').classList.remove('hidden');
+        }
+
+        // 写想法弹窗
+        function openNoteModal() {
+            document.getElementById('modal-title').innerText = "写下您的阅读随想";
+            document.getElementById('modal-selected-text').innerText = `"${selectedText}"`;
+            document.getElementById('modal-content-area').innerHTML = `
+                <textarea id="note-input" rows="3" class="w-full p-2.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="记录此刻的心得与灵感..."></textarea>
+            `;
+            document.getElementById('ai-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('ai-modal').classList.add('hidden');
+        }
+
+        // 翻页操作
+        let currentPage = 1;
+        function nextPage() {
+            if (currentPage < 18) {
+                currentPage++;
+                updatePageUI();
+                showToast(`已翻至第 ${currentPage} 页`);
+            }
+        }
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePageUI();
+                showToast(`已翻至第 ${currentPage} 页`);
+            }
+        }
+        function updatePageUI() {
+            document.getElementById('page-indicator').innerText = `第一章 ( 第 ${currentPage} / 18 页 )`;
+        }
+
+        function loadChapter(num) {
+            closeDrawers();
+            currentPage = num * 4 - 3;
+            updatePageUI();
+            showToast(`已跳转至第 ${num} 章`);
+        }
+
+        // Toast 提示框
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 1800);
+        }
+    </script>
+</body>
+</html>

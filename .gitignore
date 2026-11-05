@@ -7,3 +7,4 @@ _duiye/cache/*
 !_duiye/cache/.gitkeep
 .DS_Store
 *.local
+tests/screenshots/
