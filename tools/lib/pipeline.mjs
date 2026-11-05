@@ -249,7 +249,7 @@ export async function buildAll(root = process.cwd(), opts = {}) {
   if (opts.log !== false) {
     const ms = Date.now() - started
     console.log(
-      `[duiye] ${index.length} 篇 · ${cats.length} 分类 · ${ms}ms` +
+      `[woyaoread] ${index.length} 篇 · ${cats.length} 分类 · ${ms}ms` +
         (warnings.length ? ` · 警告 ${warnings.length}` : ''),
     )
   }

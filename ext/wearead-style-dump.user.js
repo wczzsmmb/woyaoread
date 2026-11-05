@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         微信读书 · 划线样式抓取（给「我要读书」对样式用）
-// @namespace    duiye
+// @namespace    woyaoread
 // @version      1.0
 // @description  在微信读书网页版里把马克笔/波浪线/直线/虚线的真实 CSS 打出来，复制给 AI 去对齐
 // @match        https://weread.qq.com/*
@@ -92,7 +92,7 @@
 
   function show(data) {
     const json = JSON.stringify(data, null, 2)
-    console.log('[duiye] 划线样式', data)
+    console.log('[woyaoread] 划线样式', data)
     const wrap = document.createElement('div')
     wrap.style.cssText =
       'position:fixed;inset:24px;z-index:2147483647;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;padding:14px;font:13px/1.5 -apple-system,sans-serif'

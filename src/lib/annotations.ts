@@ -11,14 +11,14 @@ export const ann = reactive({
   error: '',
 })
 
-const KEY = (id: string, key: string) => `duiye:draft:${id}:${key}`
+const KEY = (id: string, key: string) => `woyaoread:draft:${id}:${key}`
 
 function scanDrafts(id: string) {
   let n = 0
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && k.startsWith(`duiye:draft:${id}:`)) n++
+      if (k && k.startsWith(`woyaoread:draft:${id}:`)) n++
     }
   } catch {}
   return n
@@ -56,7 +56,7 @@ export async function loadAnnotations(id: string) {
   }
 }
 
-const MIRROR = (id: string) => `duiye:ann:${id}`
+const MIRROR = (id: string) => `woyaoread:ann:${id}`
 function writeMirror(id: string) {
   try {
     localStorage.setItem(MIRROR(id), JSON.stringify({ v: 1, article: id, items: ann.items }))
@@ -122,7 +122,7 @@ export async function saveAnnotation(
     ann.drafts = scanDrafts(id)
     return true
   } catch {
-    // 草稿箱：仅缓冲，主存储永远是 _duiye/annotations（含锚定字段一起存）
+    // 草稿箱：仅缓冲，主存储永远是 _woyaoread/annotations（含锚定字段一起存）
     try {
       localStorage.setItem(KEY(id, payload.key), JSON.stringify({ ...payload, at: Date.now() }))
       ann.drafts = scanDrafts(id)
@@ -136,7 +136,7 @@ export async function flushDrafts(id: string) {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && k.startsWith(`duiye:draft:${id}:`)) keys.push(k)
+      if (k && k.startsWith(`woyaoread:draft:${id}:`)) keys.push(k)
     }
   } catch {}
   for (const k of keys) {

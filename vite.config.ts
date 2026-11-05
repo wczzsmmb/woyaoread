@@ -8,17 +8,17 @@ import { buildAll } from './tools/lib/pipeline.mjs'
  * 构建期把 papers/ 编译成 public/data/{index.json,articles/*.json}。
  * dev 下改 md 会自动重建并刷新。
  */
-function duiyeContent(): Plugin {
+function woyaoreadContent(): Plugin {
   let root = process.cwd()
   return {
-    name: 'duiye-content',
+    name: 'woyaoread-content',
     configResolved(c) {
       root = c.root
     },
     async buildStart() {
       const r = await buildAll(root)
       if (r.errors.length) {
-        for (const e of r.errors) this.error(`[duiye] ${e.code}: ${e.message}`)
+        for (const e of r.errors) this.error(`[woyaoread] ${e.code}: ${e.message}`)
       }
     },
     configureServer(server) {
@@ -31,12 +31,12 @@ function duiyeContent(): Plugin {
           const r = await buildAll(root)
           if (r.errors.length) {
             server.config.logger.error(
-              `[duiye] ${r.errors.map((e) => `${e.code}: ${e.message}`).join('; ')}`,
+              `[woyaoread] ${r.errors.map((e) => `${e.code}: ${e.message}`).join('; ')}`,
             )
           }
           server.ws.send({ type: 'full-reload' })
         } catch (err) {
-          server.config.logger.error(`[duiye] ${(err as Error).message}`)
+          server.config.logger.error(`[woyaoread] ${(err as Error).message}`)
         }
       })
     },
@@ -45,7 +45,7 @@ function duiyeContent(): Plugin {
 
 export default defineConfig({
   base: './',
-  plugins: [vue(), duiyeContent()],
+  plugins: [vue(), woyaoreadContent()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

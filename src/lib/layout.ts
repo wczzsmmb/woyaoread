@@ -26,7 +26,7 @@ export interface Layout {
   covers: boolean
 }
 
-const KEY = 'duiye:layout:v3'
+const KEY = 'woyaoread:layout:v3'
 
 export const DEFAULTS: Layout = {
   mode: 'spread',
@@ -48,7 +48,7 @@ const OLD_DEFAULT_LH = 1.85
 
 function load(): Layout {
   try {
-    const raw = localStorage.getItem(KEY) || localStorage.getItem('duiye:layout:v2')
+    const raw = localStorage.getItem(KEY) || localStorage.getItem('woyaoread:layout:v2')
     if (!raw) return { ...DEFAULTS }
     const saved = { ...DEFAULTS, ...JSON.parse(raw) } as Layout
     saved.fontSize = Math.min(40, Math.max(18, Math.round(saved.fontSize || DEFAULTS.fontSize)))

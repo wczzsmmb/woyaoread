@@ -10,7 +10,7 @@ const KEEP_BAK = 3
 
 let chain = Promise.resolve()
 
-const annDir = (root) => path.join(root, '_duiye', 'annotations')
+const annDir = (root) => path.join(root, '_woyaoread', 'annotations')
 const fileOf = (root, id) => path.join(annDir(root), `${id}.json`)
 
 async function readJson(p, fallback) {

@@ -1,5 +1,5 @@
-/* 对页 PWA：静态资源 stale-while-revalidate；页面 network-first。 */
-const V = 'duiye-v3'
+/* 我要读书 PWA：静态资源 stale-while-revalidate；页面 network-first。 */
+const V = 'woyaoread-v3'
 const SHELL = ['./', './index.html', './manifest.webmanifest']
 
 self.addEventListener('install', (e) => {

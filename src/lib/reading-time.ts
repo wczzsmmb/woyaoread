@@ -1,7 +1,7 @@
 /** 阅读时长：只记在本地，属于界面状态，不进内容、不进批注。 */
 import { reactive, watch } from 'vue'
 
-const KEY = 'duiye:rtime:v1'
+const KEY = 'woyaoread:rtime:v1'
 const TICK = 10 // 秒
 
 function load(): Record<string, number> {

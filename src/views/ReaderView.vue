@@ -301,7 +301,7 @@ async function applyAssets(a: Article, idx: SiteIndex) {
     try {
       await import(/* @vite-ignore */ url)
     } catch (e) {
-      console.warn('[duiye] 扩展脚本加载失败', url, e)
+      console.warn('[woyaoread] 扩展脚本加载失败', url, e)
     }
   }
   for (const rel of idx.ext?.js || []) {
@@ -310,7 +310,7 @@ async function applyAssets(a: Article, idx: SiteIndex) {
   if (a.hasScript) {
     await load(new URL(`./data/script-${a.id}.js`, location.href).href)
   }
-  ;(window as any).__duiye = { article: a, layout, annotations: ann, open: (id: string) => (location.hash = `#/p/${id}`) }
+  ;(window as any).__woyaoread = { article: a, layout, annotations: ann, open: (id: string) => (location.hash = `#/p/${id}`) }
 }
 
 async function load(id: string) {

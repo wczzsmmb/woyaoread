@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""把「对页」两个字从系统宋体里取出轮廓，生成：
+"""把「我要读书」四个字从系统宋体里取出轮廓，生成：
    src/components/Wordmark.vue     横向字标（内联 SVG，fill: currentColor）
-   public/icon.svg                 方形图标（上下两字，可 maskable）
+   public/icon.svg                 方形图标（上下两字（读/书），可 maskable）
 
 设计取自「运筹学UI」的做法：字标不依赖字体文件、不用 SVG <text>，
 所以任何机器上渲染都一致，也不会出现字体加载抖动。
@@ -18,7 +18,7 @@ from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.boundsPen import BoundsPen
 
 ROOT = Path(__file__).resolve().parent.parent
-TEXT = "对页"
+TEXT = "我要读书"
 
 # macOS 自带宋体：Songti.ttc 是集合，按字体名挑面
 SONGTI = Path("/System/Library/Fonts/Supplemental/Songti.ttc")
@@ -85,11 +85,11 @@ def main():
         encoding="utf-8",
     )
 
-    # 2) 方形图标：上下两字，留出 maskable 安全区（用 Bold，小尺寸更立得住）
+    # 2) 方形图标：上下两字（读/书），留出 maskable 安全区（用 Bold，小尺寸更立得住）
     icon_font, icon_name = load_face("icon")
     print(f"图标字体: {icon_name}")
-    up, box1, _ = glyph_paths(icon_font, "对")
-    dn, box2, _ = glyph_paths(icon_font, "页")
+    up, box1, _ = glyph_paths(icon_font, "读")
+    dn, box2, _ = glyph_paths(icon_font, "书")
     b1, b2 = box1, box2
     w = max(b1[2] - b1[0], b2[2] - b2[0])
     h1, h2 = b1[3] - b1[1], b2[3] - b2[1]

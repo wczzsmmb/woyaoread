@@ -4,7 +4,7 @@
  *   npm start -- --host       监听 0.0.0.0（手机同一 Wi-Fi 可用）
  *   npm start -- --port 44000
  *
- * 只碰 _duiye/annotations/，绝不修改 papers/ 里的 md。
+ * 只碰 _woyaoread/annotations/，绝不修改 papers/ 里的 md。
  */
 import http from 'node:http'
 import fs from 'node:fs/promises'
@@ -150,7 +150,7 @@ const server = http.createServer(async (req, res) => {
       res.end()
       return
     }
-    if (p === '/api/ping') return json(res, 200, { ok: true, v: 1, app: 'duiye' })
+    if (p === '/api/ping') return json(res, 200, { ok: true, v: 1, app: 'woyaoread' })
 
     const m = /^\/api\/annotations\/(\d{5,6})$/.exec(p)
     if (m) {
@@ -184,7 +184,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`我要读书 · http://${HOST}:${PORT}`)
   console.log(`  静态目录 ${DIST}`)
-  console.log(`  批注数据 _duiye/annotations/`)
+  console.log(`  批注数据 _woyaoread/annotations/`)
   if (!fs.access(DIST).then(() => true, () => false)) {
     console.log('  ! 还没有 dist/，先跑 npm run build')
   }

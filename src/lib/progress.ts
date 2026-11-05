@@ -1,9 +1,9 @@
 /** 阅读进度与「最近阅读」：只存在本机，属于界面状态，不是内容数据。 */
 import { reactive, watch } from 'vue'
 
-const K_PROGRESS = 'duiye:progress:v1'
-const K_RECENT = 'duiye:recent:v1'
-const K_STARRED = 'duiye:starred:v1'
+const K_PROGRESS = 'woyaoread:progress:v1'
+const K_RECENT = 'woyaoread:recent:v1'
+const K_STARRED = 'woyaoread:starred:v1'
 const MAX_RECENT = 12
 
 function load<T extends object>(key: string, fallback: T): T {

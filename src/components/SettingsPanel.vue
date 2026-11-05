@@ -70,9 +70,9 @@ function resetLayout() {
 
 /** 本地那些存过的（排版 / 进度 / 镜像）一起清掉再刷新 */
 function clearCache() {
-  if (!confirm('清掉本机存的排版、进度和批注镜像，然后刷新？\n（批注主存储 _duiye/annotations 不受影响）')) return
+  if (!confirm('清掉本机存的排版、进度和批注镜像，然后刷新？\n（批注主存储 _woyaoread/annotations 不受影响）')) return
   try {
-    for (const k of Object.keys(localStorage)) if (k.startsWith('duiye:')) localStorage.removeItem(k)
+    for (const k of Object.keys(localStorage)) if (k.startsWith('woyaoread:')) localStorage.removeItem(k)
   } catch {}
   location.reload()
 }

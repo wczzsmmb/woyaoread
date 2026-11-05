@@ -2,7 +2,7 @@
  * MCP server（stdio）：把我要读书的工具暴露给 AI 客户端。
  *   node tools/mcp.mjs
  *
- * 原则：AI 不能直接写 papers/ 或 _duiye/annotations/，
+ * 原则：AI 不能直接写 papers/ 或 _woyaoread/annotations/，
  * ingest / build / doctor 都走同名命令，写批注走同一套校验。
  */
 import fs from 'node:fs/promises'
@@ -30,12 +30,12 @@ const run = (args) =>
 
 const tools = [
   {
-    name: 'duiye_list',
+    name: 'woyaoread_list',
     description: '列出全库分类树与篇目（编号、标题、是否有对照层、块数、对齐率、关键词）',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
-    name: 'duiye_read',
+    name: 'woyaoread_read',
     description: '读一篇文章的块文本（可按层），用于理解内容',
     inputSchema: {
       type: 'object',
@@ -49,19 +49,19 @@ const tools = [
     },
   },
   {
-    name: 'duiye_validate',
+    name: 'woyaoread_validate',
     description: '校验一个草稿目录（不写入）。返回 errors / warnings / stats',
     inputSchema: {
       type: 'object',
       properties: {
-        dir: { type: 'string', description: '草稿目录，例如 _duiye/cache/foo' },
+        dir: { type: 'string', description: '草稿目录，例如 _woyaoread/cache/foo' },
         cat: { type: 'string', description: '打算放进的分类，例如 深度学习/注意力机制' },
       },
       required: ['dir'],
     },
   },
   {
-    name: 'duiye_ingest',
+    name: 'woyaoread_ingest',
     description: '把草稿装进 papers/（先校验，不合格会拒绝并返回错误）',
     inputSchema: {
       type: 'object',
@@ -73,17 +73,17 @@ const tools = [
     },
   },
   {
-    name: 'duiye_doctor',
+    name: 'woyaoread_doctor',
     description: '全库巡检：编号重复/孔洞、孤儿批注、失联批注、对齐异常',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
-    name: 'duiye_build',
+    name: 'woyaoread_build',
     description: '构建静态站点到 dist/（改完 md 后调用）',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
-    name: 'duiye_annotation_write',
+    name: 'woyaoread_annotation_write',
     description: '给某篇文章的某个块写/删批注。key 形如 index::3f9a2c81',
     inputSchema: {
       type: 'object',
@@ -118,7 +118,7 @@ async function findArticle(id) {
 }
 
 const handlers = {
-  async duiye_list() {
+  async woyaoread_list() {
     const { articles, cats, errors } = await scan(ROOT)
     const flat = []
     for (const a of articles) {
@@ -127,7 +127,7 @@ const handlers = {
     return { ok: errors.length === 0, articles: flat.length, cats, articlesList: flat, errors }
   },
 
-  async duiye_read({ id, layer = 'index', from = 0, to }) {
+  async woyaoread_read({ id, layer = 'index', from = 0, to }) {
     if (!['index', 'zh'].includes(layer)) throw new Error('layer 只能是 index 或 zh')
     const a = await findArticle(id)
     if (!a) throw new Error(`找不到文章 ${id}`)
@@ -144,12 +144,12 @@ const handlers = {
     }
   },
 
-  async duiye_validate({ dir, cat }) {
+  async woyaoread_validate({ dir, cat }) {
     const r = await validateDraft(path.resolve(ROOT, dir), { cat })
     return r
   },
 
-  async duiye_ingest({ dir, cat }) {
+  async woyaoread_ingest({ dir, cat }) {
     const args = ['tools/ingest.mjs', dir, '--json']
     if (cat) args.push('--cat', cat)
     const r = await run(args)
@@ -160,7 +160,7 @@ const handlers = {
     return { ok: r.code === 0, exitCode: r.code, result: parsed, output: r.out, error: r.err }
   },
 
-  async duiye_doctor() {
+  async woyaoread_doctor() {
     const r = await run(['tools/doctor.mjs', '--json'])
     let parsed = null
     try {
@@ -169,12 +169,12 @@ const handlers = {
     return { ok: r.code === 0, report: parsed, output: parsed ? undefined : r.out, error: r.err }
   },
 
-  async duiye_build() {
+  async woyaoread_build() {
     const r = await run(['node_modules/vite/bin/vite.js', 'build'])
     return { ok: r.code === 0, exitCode: r.code, output: r.out.split('\n').slice(-12).join('\n'), error: r.err }
   },
 
-  async duiye_annotation_write({ id, key, layer, quote, text }) {
+  async woyaoread_annotation_write({ id, key, layer, quote, text }) {
     const data = await writeAnnotation(ROOT, id, { key, layer, quote, text })
     return { ok: true, count: Object.keys(data.items || {}).length }
   },
@@ -191,7 +191,7 @@ async function handle(req) {
       result: {
         protocolVersion: params?.protocolVersion || '2024-11-05',
         capabilities: { tools: {} },
-        serverInfo: { name: 'duiye', version: VERSION },
+        serverInfo: { name: 'woyaoread', version: VERSION },
       },
     }
   }
@@ -233,4 +233,4 @@ rl.on('line', async (line) => {
   if (res) send(res)
 })
 
-process.stderr.write(`duiye mcp v${VERSION} ready (root=${ROOT})\n`)
+process.stderr.write(`woyaoread mcp v${VERSION} ready (root=${ROOT})\n`)

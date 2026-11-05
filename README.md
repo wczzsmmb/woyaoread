@@ -1,10 +1,10 @@
-# 我要读书 · duiye
+# 我要读书 · woyaoread
 
 Markdown 精读器：**一张纸两栏读**（对开翻页 / 中英对照），目录、批注、排版收在纸右边的独立面板里。
 纯静态、无数据库、无云端；内容就是你自己的文件夹和 `md`。
 
 - 构建期把 `md` 变成 HTML / KaTeX 公式 / JSON，前端只加载 Vue
-- 批注由本地小服务写进 `_duiye/annotations/`，**程序从不修改 `papers/`**
+- 批注由本地小服务写进 `_woyaoread/annotations/`，**程序从不修改 `papers/`**
 - 批注的持久身份是「层名 + 段落内容哈希」，不是段号：插段、删段、挪目录都不会串位
 
 详细约定见 [`规格书.md`](./规格书.md)。
@@ -74,7 +74,7 @@ papers/
 
 ## 批注
 
-- 数据在 `_duiye/annotations/<编号>.json`，按编号命名，挪目录不丢
+- 数据在 `_woyaoread/annotations/<编号>.json`，按编号命名，挪目录不丢
 - 主键 `层名::内容哈希`，例如 `index::3f9a2c81`
 - 段落被改写导致哈希失配时，用存的原文快照重新定位；再不行进「失联批注」，内容不丢
 - 删除文章不会删批注文件（编号不回收，不会误挂到别的文章）
@@ -104,7 +104,7 @@ ext/js/*.js          站点级脚本，启动后执行
 ext/plugins/*.mjs    构建期插件：onScan / onArticle / onHtml / onDone
 ```
 
-`window.__duiye` 提供 `{ article, layout, annotations, open }`。
+`window.__woyaoread` 提供 `{ article, layout, annotations, open }`。
 
 ---
 
@@ -113,17 +113,17 @@ ext/plugins/*.mjs    构建期插件：onScan / onArticle / onHtml / onDone
 AI **不能**直接写 `papers/`。流程固定为：
 
 ```
-AI 写草稿 → _duiye/cache/<任意名>/{index.md, zh.md, img/}
-   ↓ npm run ingest -- _duiye/cache/<任意名> --cat 分类/子类
+AI 写草稿 → _woyaoread/cache/<任意名>/{index.md, zh.md, img/}
+   ↓ npm run ingest -- _woyaoread/cache/<任意名> --cat 分类/子类
 不合格 → 打印错误、退出码 1、papers/ 不动
 合格   → 自动发号 → 移进 papers/ → 自检
 ```
 
-MCP 暴露 `duiye_list / read / validate / ingest / doctor / build / annotation_write` 七个工具。
+MCP 暴露 `woyaoread_list / read / validate / ingest / doctor / build / annotation_write` 七个工具。
 接入方式：
 
 ```json
-{ "mcpServers": { "duiye": { "command": "node", "args": ["tools/mcp.mjs"] } } }
+{ "mcpServers": { "woyaoread": { "command": "node", "args": ["tools/mcp.mjs"] } } }
 ```
 
 ---
@@ -132,7 +132,7 @@ MCP 暴露 `duiye_list / read / validate / ingest / doctor / build / annotation_
 
 ```
 papers/      内容（你常改的地方）
-_duiye/      程序自己的数据：annotations / cache / logs
+_woyaoread/      程序自己的数据：annotations / cache / logs
 ext/         扩展
 tools/       命令：serve / validate / ingest / doctor / new / mcp
 src/         站点代码（Vue 3）
