@@ -17,6 +17,35 @@ import { align, rewriteMedia, scopeCss, toBlocks } from './render.mjs'
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|avif|svg|mp4|webm|mp3|m4a|pdf)$/i
 
+/** 给 <img> 补上原始宽高：图片加载前后尺寸一致，分页不会因为图片decode完而整体重排 */
+async function stampImageSize(html, dir) {
+  const re = /<img\b[^>]*>/g
+  const parts = []
+  let last = 0
+  for (const m of html.matchAll(re)) {
+    const tag = m[0]
+    parts.push(html.slice(last, m.index))
+    last = m.index + tag.length
+    if (/\bwidth=/.test(tag)) { parts.push(tag); continue }
+    const src = /\bsrc="\.\/media\/[^"]*?\/([^"/]+)"/.exec(tag)
+    if (!src) { parts.push(tag); continue }
+    try {
+      const buf = await fs.readFile(path.join(dir, 'img', decodeURIComponent(src[1])))
+      let w = 0
+      let h = 0
+      if (buf.length > 24 && buf[0] === 0x89 && buf.toString('latin1', 1, 4) === 'PNG') {
+        w = buf.readUInt32BE(16)
+        h = buf.readUInt32BE(20)
+      }
+      parts.push(w && h ? tag.replace('<img', `<img width="${w}" height="${h}"`) : tag)
+    } catch {
+      parts.push(tag)
+    }
+  }
+  parts.push(html.slice(last))
+  return parts.join('')
+}
+
 async function readText(p, fallback = '') {
   try {
     return await fs.readFile(p, 'utf8')
@@ -125,13 +154,10 @@ export async function buildAll(root = process.cwd(), opts = {}) {
     const zhMd = hasZh ? await readText(zhPath) : ''
     const meta = (yaml.load(await readText(path.join(a.dir, 'meta.yml'))) || {}) || {}
 
-    const left = toBlocks(indexMd, 'index').map((b) => ({
-      ...b,
-      html: rewriteMedia(b.html, a.id),
-    }))
-    const right = hasZh
-      ? toBlocks(zhMd, 'zh').map((b) => ({ ...b, html: rewriteMedia(b.html, a.id) }))
-      : []
+    const left = toBlocks(indexMd, 'index')
+    for (const b of left) b.html = await stampImageSize(rewriteMedia(b.html, a.id), a.dir)
+    const right = hasZh ? toBlocks(zhMd, 'zh') : []
+    for (const b of right) b.html = await stampImageSize(rewriteMedia(b.html, a.id), a.dir)
 
     let rows = hasZh ? align(left, right) : left.map((b) => ({ ...b, rh: null, right: null }))
 

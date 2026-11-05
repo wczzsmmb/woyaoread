@@ -210,9 +210,15 @@ export function scopeCss(css, scope) {
 
 /** 术语 / 图片路径重写：img/a.png → ./media/<id>/a.png */
 export function rewriteMedia(html, id) {
-  return html.replace(
-    /(<(?:img|source|video|audio)\b[^>]*?\b(?:src|poster)=")(?!https?:|data:|\/|\.\/media|#)([^"]+)"/g,
-    (_m, head, src) => `${head}./media/${id}/${src.replace(/^\.\//, '')}"`,
+  return (
+    html
+      .replace(
+        /(<(?:img|source|video|audio)\b[^>]*?\b(?:src|poster)=")(?!https?:|data:|\/|\.\/media|#)([^"]+)"/g,
+        (_m, head, src) => `${head}./media/${id}/${src.replace(/^\.\//, '')}"`,
+      )
+      // 图片异步解码：翻页时别把大图解码塞在主线程上。
+      // 不设 loading="lazy"——列布局里未加载的图宽高算成 0，分页会把它当空块，翻到了也看不见。
+      .replace(/<img\b(?![^>]*\bdecoding=)/g, '<img decoding="async"')
   )
 }
 
